@@ -1,436 +1,994 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
-  <title>忆海 — 独立记忆中枢</title>
-  <link rel="stylesheet" href="style.css" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>塔罗牌占卜 — 探索你的内心世界</title>
+<style>
+/* ========== 神秘黑金灵性主题全局变量 ========== */
+:root {
+  --bg: #08090d;
+  --bg-card: #10121a;
+  --border-gold: rgba(212, 175, 55, 0.45);
+  --gold-text: #f4d06f;
+  --purple-glow: #b98eff;
+  --purple-deep: #241432;
+  --accent: #e85d75;
+  --text-main: #f6f2e8;
+  --text-sub: #a49f93;
+  --text-muted: #6b665c;
+  --radius: 12px;
+  --font: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+}
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+html, body {
+  width:100%; min-height:100vh;
+  background:var(--bg); color:var(--text-main);
+  font-family:var(--font); line-height:1.6;
+  overflow-x:hidden;
+}
+
+body::before {
+  content:''; position:fixed; inset:0; z-index:0; pointer-events:none; opacity:.03;
+  background-image:
+    repeating-linear-gradient(0deg,transparent,transparent 49px,rgba(255,255,255,.05) 50px),
+    repeating-linear-gradient(90deg,transparent,transparent 49px,rgba(255,255,255,.05) 50px);
+}
+
+.app-container {
+  position:relative; z-index:1;
+  max-width:680px; margin:0 auto; padding:18px 16px 60px;
+  min-height:100vh; display:flex; flex-direction:column;
+}
+
+/* 顶部导航：左右对称、标题舒展 */
+.app-header {
+  padding:10px 0 14px; position:relative;
+}
+.app-header-nav {
+  display:flex; justify-content:space-between; align-items:center; width:100%; margin-bottom:12px;
+}
+/* 左侧高质感纯白退出按钮 */
+.top-back-btn {
+  background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.3);
+  color:#ffffff; padding:5px 14px; border-radius:20px;
+  font-size:.78rem; font-weight:600; cursor:pointer; transition:all .2s;
+  display:inline-flex; align-items:center; gap:4px; letter-spacing:1px;
+}
+.top-back-btn:active {
+  background:rgba(255,255,255,0.2); transform:scale(0.96);
+}
+/* 右侧高级星轨设置按钮 */
+.top-mystic-btn {
+  background:rgba(255,255,255,0.08); border:1px solid rgba(212,175,55,0.4);
+  color:var(--gold-text); padding:5px 12px; border-radius:20px;
+  font-size:.78rem; font-weight:600; cursor:pointer; transition:all .2s;
+  display:inline-flex; align-items:center; gap:4px; letter-spacing:1px;
+}
+.top-mystic-btn:active {
+  background:rgba(212,175,55,0.2); transform:scale(0.96);
+}
+
+.app-header h1 {
+  font-size:1.9rem; font-weight:700; color:var(--purple-glow); letter-spacing:4px; text-align:center;
+}
+.app-header .subtitle {
+  font-size:.88rem; color:var(--text-sub); margin-top:4px; letter-spacing:1.5px; text-align:center;
+}
+.divider {
+  width:50px; height:2px; background:var(--purple-glow); margin:10px auto 0; border-radius:1px; opacity:0.8;
+}
+
+/* 阶段容器 */
+.stage { display:none; flex-direction:column; align-items:center; flex:1; width:100%; }
+.stage.active { display:flex; }
+
+/* 欢迎主屏 */
+.welcome-content {
+  text-align:center; padding:16px 10px; width:100%;
+}
+.welcome-diamond {
+  font-size:2.2rem; margin:14px auto; color:var(--purple-glow);
+  filter:drop-shadow(0 0 12px rgba(185,142,255,0.5));
+}
+.welcome-content h2 {
+  font-size:1.45rem; color:#ffffff; margin-bottom:10px; letter-spacing:1.5px;
+}
+.welcome-content p {
+  color:var(--text-sub); font-size:.9rem; line-height:1.8; margin-bottom:18px;
+}
+.welcome-grid {
+  display:grid; grid-template-columns:1fr 1fr; gap:12px; margin:16px 0 24px;
+}
+.welcome-card {
+  background:var(--bg-card); border:1px solid rgba(255,255,255,0.08);
+  border-radius:14px; padding:16px 12px; text-align:center;
+}
+.wc-num { font-size:1.15rem; font-weight:700; color:var(--purple-glow); margin-bottom:4px; font-family:serif; }
+.wc-label { font-size:.82rem; color:var(--text-main); }
+
+/* 按钮通用 */
+.btn {
+  display:inline-flex; align-items:center; justify-content:center;
+  padding:12px 32px; border-radius:12px; font-size:.92rem;
+  cursor:pointer; transition:all .2s; border:none; letter-spacing:1.5px;
+}
+.btn-purple {
+  background:linear-gradient(135deg, #a074ec, #7b4ec8);
+  color:#ffffff; font-weight:600; box-shadow:0 4px 18px rgba(160,116,236,0.3);
+}
+.btn-purple:active { transform:scale(0.98); }
+.btn-gold {
+  background:linear-gradient(180deg, #382a1b 0%, #1e150d 100%);
+  border:1px solid var(--gold-text); color:var(--gold-text);
+  font-weight:600; box-shadow:0 4px 16px rgba(0,0,0,0.5);
+}
+.btn-gold:active { transform:scale(0.98); background:#150e09; }
+
+/* 场景与牌阵 */
+.scenario-grid {
+  display:grid; grid-template-columns:repeat(2, 1fr); gap:12px; width:100%; margin:16px 0;
+}
+.scenario-card {
+  background:var(--bg-card); border:1px solid rgba(255,255,255,0.1);
+  border-radius:var(--radius); padding:16px 12px; text-align:center;
+  cursor:pointer; transition:all .2s;
+}
+.scenario-card.selected {
+  border-color:var(--gold-text); background:rgba(212,175,55,0.08);
+  box-shadow:0 0 12px rgba(212,175,55,0.2);
+}
+.sc-name { font-size:.92rem; font-weight:600; color:var(--text-main); margin-bottom:3px; }
+.sc-desc { font-size:.74rem; color:var(--text-sub); }
+
+.user-q-input {
+  width:100%; background:var(--bg-card); border:1px solid rgba(255,255,255,0.15);
+  border-radius:10px; color:#fff; padding:10px 14px; font-size:.88rem; outline:none; margin-bottom:12px;
+}
+.user-q-input:focus { border-color:var(--purple-glow); }
+
+/* 卡牌翻转 */
+.tarot-spread-row {
+  display:flex; gap:14px; justify-content:center; flex-wrap:wrap; margin:24px 0;
+}
+.tarot-card-box {
+  width:105px; height:170px; perspective:1000px; cursor:pointer;
+}
+.tarot-card-inner {
+  position:relative; width:100%; height:100%;
+  transition:transform .7s cubic-bezier(.4,0,.2,1);
+  transform-style:preserve-3d;
+}
+.tarot-card-box.flipped .tarot-card-inner { transform:rotateY(180deg); }
+.tarot-face {
+  position:absolute; inset:0; backface-visibility:hidden;
+  border-radius:10px; overflow:hidden; border:1px solid var(--border-gold);
+}
+.tarot-back {
+  background:#090a0f url('images/card_back.png') center/cover no-repeat;
+  box-shadow:0 4px 12px rgba(0,0,0,0.6);
+}
+.tarot-front {
+  background:#0d0e14; transform:rotateY(180deg);
+  display:flex; flex-direction:column;
+}
+.tarot-front img {
+  width:100%; flex:1; object-fit:cover; display:block;
+}
+.tarot-front.reversed img { transform:rotate(180deg); }
+.tarot-front-bar {
+  padding:4px 2px; text-align:center; background:#12141c; font-size:.72rem; color:var(--gold-text);
+  border-top:1px solid rgba(212,175,55,0.2);
+}
+
+/* 解读区 */
+.reading-box {
+  background:var(--bg-card); border:1px solid rgba(255,255,255,0.12);
+  border-radius:14px; padding:18px; width:100%; margin-top:20px;
+}
+.reading-box h3 { font-size:1rem; color:var(--gold-text); margin-bottom:8px; }
+.reading-item {
+  padding:10px 12px; margin-top:10px; border-left:2px solid var(--gold-text);
+  background:rgba(255,255,255,0.03); border-radius:0 8px 8px 0;
+}
+
+/* 微信原生白灰微绿设计质感弹窗 (彻底杜绝生硬黑白原生框) */
+.wechat-share-mask {
+  position:fixed; inset:0; background:rgba(0,0,0,0.55); z-index:10000;
+  display:none; align-items:center; justify-content:center; padding:20px;
+  backdrop-filter:blur(5px); animation:wechatFadeIn 0.2s ease-out;
+}
+.wechat-share-box {
+  background:#ffffff; border-radius:14px; max-width:360px; width:100%;
+  padding:20px 18px 16px; box-shadow:0 12px 36px rgba(0,0,0,0.22);
+  display:flex; flex-direction:column; box-sizing:border-box;
+}
+.wechat-share-title {
+  font-size:16px; font-weight:600; color:#181818; text-align:center; margin-bottom:6px;
+}
+.wechat-share-subtitle {
+  font-size:11.5px; color:#888888; text-align:center; margin-bottom:14px; line-height:1.4;
+}
+.wechat-contact-scroll {
+  max-height:230px; overflow-y:auto; border-radius:8px; border:0.5px solid #ebebeb;
+  background:#fafafa; margin-bottom:14px;
+}
+.wechat-contact-row {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:10px 12px; border-bottom:0.5px solid #f0f0f0; background:#ffffff;
+  cursor:pointer; transition:background 0.15s;
+}
+.wechat-contact-row:last-child { border-bottom:none; }
+.wechat-contact-row:active { background:#f5f5f5; }
+.wechat-send-tag {
+  font-size:12px; color:#07c160; font-weight:600; padding:3px 8px; border-radius:4px;
+  background:#f0f9eb;
+}
+.wechat-cancel-btn {
+  width:100%; border:none; background:#f2f2f2; color:#555555; padding:10px 0;
+  border-radius:8px; font-size:13.5px; font-weight:500; cursor:pointer;
+}
+.wechat-cancel-btn:active { background:#e5e5e5; }
+
+/* 微信轻量浮动 Toast */
+.wechat-toast-pill {
+  position:fixed; top:45%; left:50%; transform:translate(-50%, -50%);
+  background:rgba(30,30,30,0.92); color:#ffffff; padding:12px 22px;
+  border-radius:24px; font-size:13px; font-weight:500; z-index:11000;
+  box-shadow:0 6px 20px rgba(0,0,0,0.3); pointer-events:none;
+  display:flex; align-items:center; gap:8px; text-align:center;
+  animation:wechatFadeIn 0.2s ease-out;
+}
+
+@keyframes wechatFadeIn {
+  from { opacity:0; transform:translate(-50%, -46%); }
+  to { opacity:1; transform:translate(-50%, -50%); }
+}
+
+/* 黑金设置弹窗 */
+.mystic-modal-mask {
+  position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:9999;
+  display:none; align-items:center; justify-content:center; padding:16px;
+  backdrop-filter:blur(8px);
+}
+.mystic-modal-box {
+  background:#11131b; border:1.5px solid var(--border-gold); border-radius:18px;
+  max-width:440px; width:100%; padding:22px 18px; box-shadow:0 16px 48px rgba(0,0,0,0.85);
+}
+.mm-title {
+  font-size:1.1rem; font-weight:700; color:var(--gold-text); text-align:center;
+  letter-spacing:2px; margin-bottom:18px;
+}
+.mm-group {
+  margin-bottom:16px; position:relative;
+}
+.mm-label {
+  display:block; font-size:.78rem; color:var(--text-sub); margin-bottom:6px; letter-spacing:.5px;
+}
+
+.custom-drop-header {
+  width:100%; background:#090a10; border:1px solid rgba(212,175,55,0.35);
+  border-radius:10px; color:#f6f2e8; padding:10px 12px; font-size:.85rem;
+  display:flex; align-items:center; justify-content:space-between;
+  cursor:pointer; user-select:none; transition:border-color .2s;
+}
+.custom-drop-header:active { border-color:var(--gold-text); }
+.custom-drop-arrow { font-size:10px; color:var(--gold-text); transition:transform .2s; }
+.custom-drop-header.open .custom-drop-arrow { transform:rotate(180deg); }
+
+.custom-drop-menu {
+  position:absolute; top:calc(100% + 4px); left:0; right:0;
+  background:#141722; border:1px solid rgba(212,175,55,0.4);
+  border-radius:10px; box-shadow:0 8px 24px rgba(0,0,0,0.9);
+  max-height:170px; overflow-y:auto; z-index:100;
+  display:none; flex-direction:column; padding:4px;
+}
+.custom-drop-menu.open { display:flex; }
+.custom-drop-item {
+  padding:9px 12px; border-radius:6px; font-size:.82rem; color:#f6f2e8;
+  cursor:pointer; transition:background .15s; user-select:none;
+}
+.custom-drop-item:active, .custom-drop-item.selected {
+  background:rgba(212,175,55,0.15); color:var(--gold-text); font-weight:600;
+}
+
+.mm-btns {
+  display:flex; justify-content:flex-end; gap:10px; margin-top:22px;
+}
+
+.app-footer {
+  text-align:center; padding:24px 0 10px; color:var(--text-muted); font-size:.74rem;
+  margin-top:auto; letter-spacing:1px;
+}
+</style>
 </head>
 <body>
 
-  <!-- 轻量背景微粒画布 -->
-  <canvas id="field" aria-hidden="true"></canvas>
-
-  <!-- 顶部原生微信质感沉浸导航栏（穿透手机状态栏） -->
+<div class="app-container">
   <header class="app-header">
-    <div class="status-bar-spacer"></div>
-    <div class="header-inner">
-      <button type="button" class="icon-nav-btn" id="btn-back" aria-label="返回小手机桌面">
-        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="15 18 9 12 15 6"></polyline>
-        </svg>
-        <span>桌面</span>
-      </button>
-
-      <div class="app-title">
-        <span class="title-main">忆海</span>
-        <span class="title-sub" id="header-engine-mode">本地混合检索</span>
-      </div>
-
-      <div class="header-actions">
-        <button type="button" class="icon-nav-btn" id="btn-open-settings" aria-label="向量与总结配置">
-          <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="3"></circle>
-            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-          </svg>
-        </button>
-        <button type="button" class="icon-nav-btn primary" id="btn-open-ingest" aria-label="收纳新记忆">
-          <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="12" y1="5" x2="12" y2="19"></line>
-            <line x1="5" y1="12" x2="19" y2="12"></line>
-          </svg>
-        </button>
-      </div>
+    <div class="app-header-nav">
+      <!-- 🌟 纯白高级退出按键 -->
+      <button class="top-back-btn" onclick="exitToDesktop()">← 退出</button>
+      <!-- 🌟 右上角星轨设置 -->
+      <button class="top-mystic-btn" onclick="openMysticSettings()">✦ 星轨设置 ✦</button>
     </div>
+    <h1>塔罗牌占卜</h1>
+    <p class="subtitle">倾听内心的声音，照亮前行的路</p>
+    <div class="divider"></div>
   </header>
 
-  <main class="app-main">
-    
-    <!-- 记忆池状态与概览卡片 -->
-    <section class="overview-card">
-      <div class="stat-grid">
-        <div class="stat-item">
-          <div class="stat-val" id="stat-total-memories">0</div>
-          <div class="stat-lbl">角色往昔</div>
-        </div>
-        <div class="stat-divider"></div>
-        <div class="stat-item">
-          <div class="stat-val" id="stat-active-evidence">0</div>
-          <div class="stat-lbl">真实对白凭据</div>
-        </div>
-        <div class="stat-divider"></div>
-        <div class="stat-item">
-          <div class="stat-val" id="stat-index-state">本地</div>
-          <div class="stat-lbl">检索管线</div>
-        </div>
-      </div>
-    </section>
-
-    <!-- 追忆检索框 -->
-    <section class="search-section">
-      <div class="search-box">
-        <svg class="search-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="11" cy="11" r="8"></circle>
-          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-        </svg>
-        <input id="search-input" type="search" autocomplete="off" placeholder="按语义或关键词追忆（人物约定、喜好、回忆）..." />
-        <button type="button" id="btn-clear-search" class="clear-btn" aria-label="清空搜索" hidden>×</button>
-      </div>
-      <div class="search-hint" id="search-feedback" hidden>正在进行向量与重排精算...</div>
-    </section>
-
-    <!-- 专属角色联系人胶囊条 -->
-    <section class="filter-section">
-      <div class="filter-capsules" id="filter-capsules">
-        <button type="button" class="capsule active" data-filter="all">全角色</button>
-      </div>
-    </section>
-
-    <!-- 记忆流列表 -->
-    <section class="memory-stream-section">
-      <div class="section-meta">
-        <span class="meta-title" id="stream-meta-title">记忆列表</span>
-        <span class="meta-count" id="stream-meta-count">共 0 条</span>
+  <!-- 阶段 0：欢迎主屏 -->
+  <div class="stage active" id="stage-welcome">
+    <div class="welcome-content">
+      <div class="welcome-diamond">✦</div>
+      <h2>准备好探索你的内心了吗？</h2>
+      <p>借助经典塔罗 78 张原型牌面与 AI 灵性洞察，进行深层的自我反思与指引。</p>
+      
+      <div class="welcome-grid">
+        <div class="welcome-card"><div class="wc-num">01</div><div class="wc-label">探索场景</div></div>
+        <div class="welcome-card"><div class="wc-num">02</div><div class="wc-label">确定牌阵</div></div>
+        <div class="welcome-card"><div class="wc-num">03</div><div class="wc-label">抽牌启示</div></div>
+        <div class="welcome-card"><div class="wc-num">04</div><div class="wc-label">AI 深度解读</div></div>
       </div>
 
-      <div class="memory-list" id="memory-list">
-        <div class="empty-state" id="empty-state">
-          <div class="empty-icon">
-            <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="#999999" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8z"></path>
-              <path d="M12 6v6l4 2"></path>
-            </svg>
-          </div>
-          <div class="empty-title">暂无该角色的往昔记忆</div>
-          <div class="empty-desc">在聊天中与联系人对话，关键信息会自动萃取并沉淀为记忆凭据。</div>
-        </div>
-      </div>
-    </section>
-
-  </main>
-
-  <!-- 浮层弹窗：向量检索与静默总结模型配置 -->
-  <div class="rem-modal-mask" id="settings-modal" hidden>
-    <div class="rem-modal-box">
-      <div class="rem-modal-head">
-        <div class="rem-modal-title">记忆中枢与总结配置</div>
-        <div class="head-right-actions">
-          <button type="button" class="question-icon-btn" id="btn-info-engine" title="什么是向量与重排？">?</button>
-          <button type="button" class="rem-modal-close" data-close="settings-modal">×</button>
-        </div>
-      </div>
-      <div class="rem-modal-body scrollable">
-        
-        <!-- 邀请码与快速开通胶囊 -->
-        <div class="promo-box" id="btn-open-promo">
-          <div class="promo-info">
-            <div class="promo-title">快速获取向量与 Reranker 渠道</div>
-            <div class="promo-sub">免费千万 Token 额度 · 支持高维向量与重排</div>
-          </div>
-          <div class="promo-arrow">›</div>
-        </div>
-
-        <div style="font-size:12px;font-weight:600;color:#07c160;margin:8px 0 4px;border-bottom:0.5px solid #eee;padding-bottom:3px;">
-          一、高维向量检索 (Embedding & Reranker)
-        </div>
-
-        <label class="form-label" for="cfg-api-url">向量 API 接口地址 (Base URL)</label>
-        <input id="cfg-api-url" type="url" class="form-input" placeholder="https://api.siliconflow.cn/v1" />
-
-        <label class="form-label" for="cfg-api-key">向量 API 密钥 (API Key)</label>
-        <input id="cfg-api-key" type="password" class="form-input" placeholder="sk-..." autocomplete="off" />
-
-        <!-- 向量模型选择 -->
-        <div class="model-select-group">
-          <div class="label-with-action">
-            <div class="label-with-help">
-              <label class="form-label" for="cfg-embed-model">Embedding 向量模型</label>
-              <button type="button" class="question-icon-btn inline" id="btn-info-embed" title="查看向量模型梯队与说明">?</button>
-            </div>
-            <button type="button" class="link-btn" id="btn-pick-embed">拉取并选择</button>
-          </div>
-          <input id="cfg-embed-model" type="text" class="form-input" placeholder="例如: BAAI/bge-m3" />
-        </div>
-
-        <!-- 重排序模型选择 -->
-        <div class="model-select-group">
-          <div class="label-with-action">
-            <div class="label-with-help">
-              <label class="form-label" for="cfg-rerank-model">Reranker 重排序模型</label>
-              <button type="button" class="question-icon-btn inline" id="btn-info-rerank" title="查看重排模型梯队与说明">?</button>
-            </div>
-            <button type="button" class="link-btn" id="btn-pick-rerank">拉取并选择</button>
-          </div>
-          <input id="cfg-rerank-model" type="text" class="form-input" placeholder="例如: BAAI/bge-reranker-v2-m3" />
-        </div>
-
-        <div class="form-row toggle-row">
-          <div>
-            <div class="toggle-title">启用高维向量语义追忆</div>
-            <div class="toggle-desc">未开启时自动降级为本地多维关键词权重计算</div>
-          </div>
-          <input id="cfg-enable-vector" type="checkbox" class="wechat-switch" />
-        </div>
-
-        <!-- 🧠 独立记忆总结专用配置通道 -->
-        <div style="font-size:12px;font-weight:600;color:#07c160;margin:16px 0 4px;border-bottom:0.5px solid #eee;padding-bottom:3px;">
-          二、后台记忆总结专用通道 (实惠低价模型)
-        </div>
-
-        <div class="form-row toggle-row" style="margin-bottom:8px;">
-          <div>
-            <div class="toggle-title">继承小手机主设置 API</div>
-            <div class="toggle-desc">使用系统设置中心已配好的 Base URL 与 Key</div>
-          </div>
-          <input id="cfg-summary-use-host" type="checkbox" class="wechat-switch" checked />
-        </div>
-
-        <div id="panel-custom-summary-api" style="display:none;">
-          <label class="form-label" for="cfg-summary-api-url">总结专用 API Base URL</label>
-          <input id="cfg-summary-api-url" type="url" class="form-input" placeholder="https://api.siliconflow.cn/v1" />
-
-          <label class="form-label" for="cfg-summary-api-key">总结专用 API Key</label>
-          <input id="cfg-summary-api-key" type="password" class="form-input" placeholder="sk-..." autocomplete="off" />
-        </div>
-
-        <div class="model-select-group">
-          <div class="label-with-action">
-            <div class="label-with-help">
-              <label class="form-label" for="cfg-summary-model">记忆总结模型 (建议低价模型)</label>
-            </div>
-            <button type="button" class="link-btn" id="btn-pick-summary-model">拉取并选择</button>
-          </div>
-          <input id="cfg-summary-model" type="text" class="form-input" placeholder="例如: deepseek-ai/DeepSeek-V3" />
-        </div>
-
-      </div>
-      <div class="rem-modal-foot btn-group">
-        <button type="button" class="rem-btn cancel" data-close="settings-modal">取消</button>
-        <button type="button" class="rem-btn primary" id="btn-save-settings">保存配置</button>
-      </div>
+      <button class="btn btn-purple" onclick="goStage('scenario')" style="width:100%; max-width:320px;">
+        开始占卜 →
+      </button>
     </div>
   </div>
 
-  <!-- 浮层弹窗：仿微信白灰模型即时搜索选择弹窗 -->
-  <div class="rem-modal-mask" id="model-picker-modal" hidden>
-    <div class="rem-modal-box">
-      <div class="rem-modal-head">
-        <div class="rem-modal-title" id="model-picker-title">选择模型</div>
-        <button type="button" class="rem-modal-close" data-close="model-picker-modal">×</button>
-      </div>
-      <div class="rem-modal-body no-pad">
-        <div class="picker-search-box">
-          <input id="picker-search-input" type="search" placeholder="输入关键词快速过滤模型..." />
-        </div>
-        <div class="model-options-list" id="model-options-list">
-          <!-- 动态装配选项 -->
-        </div>
-      </div>
-      <div class="rem-modal-foot">
-        <button type="button" class="rem-btn cancel" data-close="model-picker-modal">关闭</button>
-      </div>
+  <!-- 阶段 1：场景选择 -->
+  <div class="stage" id="stage-scenario">
+    <input type="text" id="customQ" class="user-q-input" placeholder="在心中默念或输入具体的困惑（选填）...">
+    <div class="scenario-grid" id="scenarioGrid"></div>
+    <div style="display:flex; gap:10px; width:100%; max-width:320px; margin-top:14px;">
+      <button class="btn btn-gold" style="flex:1;" onclick="goStage('welcome')">返回</button>
+      <button class="btn btn-purple" style="flex:1;" id="btnScenarioNext" disabled onclick="goStage('spread')">下一步</button>
     </div>
   </div>
 
-  <!-- 浮层弹窗：聊天记忆中枢简明科普 (100~150字) -->
-  <div class="rem-modal-mask" id="engine-info-modal" hidden>
-    <div class="rem-modal-box">
-      <div class="rem-modal-head">
-        <div class="rem-modal-title">记忆引擎如何协同？</div>
-        <button type="button" class="rem-modal-close" data-close="engine-info-modal">×</button>
-      </div>
-      <div class="rem-modal-body">
-        <p class="info-content-p">
-          在聊天时，角色并非机械读全文。<b>向量模型</b>如同雷达，将你的当前发言转化为语义空间坐标，即使字面不同也能瞬间捞出含义相似的历史记忆；<b>Reranker 重排模型</b>则像专属质检员，根据当下的深层语境逐一打分，挑出真正最相关的核心对白提供给角色，让回复如同活人般连贯而深刻。
-        </p>
-      </div>
-      <div class="rem-modal-foot">
-        <button type="button" class="rem-btn primary" data-close="engine-info-modal">了解</button>
-      </div>
+  <!-- 阶段 2：牌阵选择 -->
+  <div class="stage" id="stage-spread">
+    <div style="font-size:.9rem; color:var(--gold-text); margin-bottom:12px;">选择适合当下的牌阵：</div>
+    <div style="display:flex; flex-direction:column; gap:10px; width:100%;" id="spreadOptions"></div>
+    <div style="display:flex; gap:10px; width:100%; max-width:320px; margin-top:18px;">
+      <button class="btn btn-gold" style="flex:1;" onclick="goStage('scenario')">返回</button>
+      <button class="btn btn-purple" style="flex:1;" id="btnSpreadNext" disabled onclick="startDrawCards()">开始抽牌</button>
     </div>
   </div>
 
-  <!-- 浮层弹窗：硅基流动向量模型价格与说明 -->
-  <div class="rem-modal-mask" id="embed-info-modal" hidden>
-    <div class="rem-modal-box modal-lg">
-      <div class="rem-modal-head">
-        <div class="rem-modal-title">硅基流动向量模型梯队</div>
-        <button type="button" class="rem-modal-close" data-close="embed-info-modal">×</button>
-      </div>
-      <div class="rem-modal-body scrollable">
-        <div class="price-tier">
-          <div class="tier-title">一、免费档 (0 元)</div>
-          <ul class="tier-list">
-            <li><b>BAAI/bge-m3</b>：多语言通用款，支持 100+ 语言，8K 上下文，跨语言与日常检索表现优秀。</li>
-            <li><b>BAAI/bge-large-zh-v1.5</b>：中文专项优化，中文检索稳定。</li>
-            <li><b>BAAI/bge-large-en-v1.5</b>：英文专项优化款。</li>
-          </ul>
-        </div>
-        <div class="price-tier">
-          <div class="tier-title">二、平价生产档 (约 0.07~0.14 元 / 百万Tokens)</div>
-          <ul class="tier-list">
-            <li><b>Pro/BAAI/bge-m3</b>：免费版同款能力，并发更高、保障更稳（约 0.07 元）。</li>
-            <li><b>Qwen/Qwen3-Embedding-0.6B</b>：轻量高速款，32K 超长上下文（约 0.07 元）。</li>
-            <li><b>Qwen/Qwen3-Embedding-4B</b>：平衡款，长上下文与精度兼备（约 0.14 元）。</li>
-          </ul>
-        </div>
-        <div class="price-tier">
-          <div class="tier-title">三、高精度旗舰档 (约 0.28 元 / 百万Tokens)</div>
-          <ul class="tier-list">
-            <li><b>Qwen/Qwen3-Embedding-8B</b>：32K 超长上下文，多语言顶级水平，长文本理解力强。</li>
-          </ul>
-        </div>
-        <div class="price-tier">
-          <div class="tier-title">四、多模态向量</div>
-          <ul class="tier-list">
-            <li><b>Qwen/Qwen3-VL-Embedding</b>：支持文本、图文等多模态跨域检索。</li>
-          </ul>
-        </div>
-        <p class="price-disclaimer">注：上述梯队与价格仅供参考，官方实际收费可能伴随调整，请以硅基流动官网最新公示为准。</p>
-      </div>
-      <div class="rem-modal-foot">
-        <button type="button" class="rem-btn primary" data-close="embed-info-modal">知道了</button>
-      </div>
+  <!-- 阶段 3：抽牌与解牌 -->
+  <div class="stage" id="stage-draw">
+    <div style="font-size:.85rem; color:var(--text-sub); text-align:center; margin-bottom:12px;" id="drawTip">
+      轻触卡牌翻开牌面，感应牌中能量：
     </div>
+    <div class="tarot-spread-row" id="spreadCardsRow"></div>
+
+    <div class="reading-box" id="readingBox" style="display:none;">
+      <h3>✦ 牌面能量指引 ✦</h3>
+      <div id="readingDetail"></div>
+      <div style="text-align:center; margin-top:16px;">
+        <button class="btn btn-purple" id="btnCallAI" onclick="invokeAIReading()">✦ 召唤 AI 深度解读 ✦</button>
+      </div>
+
+      <!-- 🌟 转发给好友/角色解读入口 -->
+      <div style="text-align:center; margin-top:16px;">
+        <button class="btn btn-gold" id="btnShareTarot" onclick="openShareTarotModal()" style="padding:10px 24px; font-size:.85rem;">
+          ✦ 转发给好友解读 ✦
+        </button>
+        <div style="font-size:.74rem; color:rgba(255,255,255,0.48); margin-top:6px; letter-spacing:0.3px;">
+          角色不一定能够准确解读，可能因性格产生独特见解、误读甚至拒绝
+        </div>
+      </div>
+
+      <div id="aiTextResult" style="margin-top:14px; font-size:.88rem; color:#f0eae1; line-height:1.9; white-space:pre-wrap;"></div>
+    </div>
+
+    <button class="btn btn-gold" id="btnRestart" style="margin-top:20px; display:none;" onclick="resetAll()">
+      重新占卜
+    </button>
   </div>
 
-  <!-- 浮层弹窗：硅基流动 Reranker 重排模型价格与说明 -->
-  <div class="rem-modal-mask" id="rerank-info-modal" hidden>
-    <div class="rem-modal-box modal-lg">
-      <div class="rem-modal-head">
-        <div class="rem-modal-title">硅基流动 Reranker 重排模型梯队</div>
-        <button type="button" class="rem-modal-close" data-close="rerank-info-modal">×</button>
+  <footer class="app-footer">
+    塔罗牌是自我反思的工具 · 保持开放的心，最终的决策在你手中
+  </footer>
+</div>
+
+<!-- ✦ 微信纯正白灰微绿质感转发弹窗 (杜绝原生黑白框) ✦ -->
+<div class="wechat-share-mask" id="shareTarotModal">
+  <div class="wechat-share-box">
+    <div class="wechat-share-title">转发牌阵至聊天</div>
+    <div class="wechat-share-subtitle">选择一位好友或群聊，发送后保持静止<br>需进入聊天主动说话或点击闪电图标生成</div>
+    <div class="wechat-contact-scroll" id="shareContactList">
+      <!-- 动态填充微信联系人列表 -->
+    </div>
+    <button type="button" class="wechat-cancel-btn" onclick="closeShareTarotModal()">取消</button>
+  </div>
+</div>
+
+<!-- ✦ 黑金自渲染折叠设置面板 ✦ -->
+<div class="mystic-modal-mask" id="mysticSettingsModal">
+  <div class="mystic-modal-box">
+    <div class="mm-title">✦ 塔罗与星轨设置 ✦</div>
+
+    <!-- 1. 桌面组件开关 -->
+    <div class="mm-group">
+      <label class="mm-label">桌面 4 格星象大组件：</label>
+      <div class="custom-drop-header" id="widgetEnabledHeader" onclick="toggleCustomDrop('widgetEnabledMenu')">
+        <span id="widgetEnabledValText">开启显示（推荐）</span>
+        <span class="custom-drop-arrow">▼</span>
       </div>
-      <div class="rem-modal-body scrollable">
-        <div class="price-tier">
-          <div class="tier-title">一、免费档 (0 元)</div>
-          <ul class="tier-list">
-            <li><b>BAAI/bge-reranker-v2-m3</b>：多语言通用主流款，8K 上下文，与 bge-m3 向量模型配合契合度极佳，中文重排稳定。</li>
-          </ul>
-        </div>
-        <div class="price-tier">
-          <div class="tier-title">二、平价生产档 (约 0.07 元 / 百万Tokens)</div>
-          <ul class="tier-list">
-            <li><b>Pro/BAAI/bge-reranker-v2-m3</b>：提供更高并发限额与生产保障。</li>
-            <li><b>Qwen/Qwen3-Reranker-0.6B</b>：轻量高速款，32K 上下文，适合实时精排。</li>
-          </ul>
-        </div>
-        <div class="price-tier">
-          <div class="tier-title">三、中高精度档 (约 0.14~0.28 元 / 百万Tokens)</div>
-          <ul class="tier-list">
-            <li><b>Qwen/Qwen3-Reranker-4B</b>：平衡精度与成本（约 0.14 元）。</li>
-            <li><b>Qwen/Qwen3-Reranker-8B</b>：旗舰重排款，长文本与语境关联判断能力极强（约 0.28 元）。</li>
-          </ul>
-        </div>
-        <div class="price-tier">
-          <div class="tier-title">四、多模态重排</div>
-          <ul class="tier-list">
-            <li><b>Qwen/Qwen3-VL-Reranker</b>：支持图文多模态深度重排序。</li>
-          </ul>
-        </div>
-        <p class="price-disclaimer">配套建议：通常向量检索和重排建议同系列搭配使用（如 bge-m3 配 bge-reranker，Qwen3 系列成对搭配）。注：价格可能伴随官方运营策略变动，请以官网实时规则为准。</p>
-      </div>
-      <div class="rem-modal-foot">
-        <button type="button" class="rem-btn primary" data-close="rerank-info-modal">知道了</button>
+      <div class="custom-drop-menu" id="widgetEnabledMenu">
+        <div class="custom-drop-item selected" data-val="true" onclick="selectDropVal('widgetEnabled', 'true', '开启显示（推荐）')">开启显示（推荐）</div>
+        <div class="custom-drop-item" data-val="false" onclick="selectDropVal('widgetEnabled', 'false', '隐藏组件')">隐藏组件</div>
       </div>
     </div>
-  </div>
 
-  <!-- 浮层弹窗：专属硅基流动邀请码展示 -->
-  <div class="rem-modal-mask" id="promo-modal" hidden>
-    <div class="rem-modal-box">
-      <div class="rem-modal-head">
-        <div class="rem-modal-title">专属向量模型渠道</div>
-        <button type="button" class="rem-modal-close" data-close="promo-modal">×</button>
+    <!-- 2. 默认抽卡牌阵 -->
+    <div class="mm-group">
+      <label class="mm-label">桌面组件默认抽卡牌阵：</label>
+      <div class="custom-drop-header" id="widgetSpreadHeader" onclick="toggleCustomDrop('widgetSpreadMenu')">
+        <span id="widgetSpreadValText">三张牌阵（过去·现在·未来）</span>
+        <span class="custom-drop-arrow">▼</span>
       </div>
-      <div class="rem-modal-body">
-        <p class="promo-text">此为软件创作者的硅基流动专属邀请链接。新用户注册即可获赠专属额度，并免额度畅享多款免费 Embedding 向量与 Reranker 重排序模型：</p>
-        <div class="link-copy-box">
-          <code id="promo-url-text">https://cloud.siliconflow.cn/i/IJNUaNtb</code>
-          <button type="button" class="rem-btn sub" id="btn-copy-promo">复制链接</button>
-        </div>
-        <p class="promo-subtext">复制链接至外部浏览器打开即可注册（邀请码已附带，可以的话希望不要删除邀请码哦）。</p>
-      </div>
-      <div class="rem-modal-foot">
-        <button type="button" class="rem-btn primary" data-close="promo-modal">我知道了</button>
+      <div class="custom-drop-menu" id="widgetSpreadMenu">
+        <div class="custom-drop-item selected" data-val="triple" onclick="selectDropVal('widgetSpread', 'triple', '三张牌阵（过去·现在·未来）')">三张牌阵（过去·现在·未来）</div>
+        <div class="custom-drop-item" data-val="single" onclick="selectDropVal('widgetSpread', 'single', '单张牌阵（每日核心启示）')">单张牌阵（每日核心启示）</div>
       </div>
     </div>
-  </div>
 
-  <!-- 浮层弹窗：微信白灰简约确认框 -->
-  <div class="rem-modal-mask" id="dialog-modal" hidden>
-    <div class="rem-modal-box dialog-box">
-      <div class="rem-modal-body dialog-body">
-        <div class="dialog-title" id="dialog-title">提示</div>
-        <div class="dialog-content" id="dialog-content">确定要执行此操作吗？</div>
+    <!-- 3. AI 预设选择（真实抓取主系统备注模型） -->
+    <div class="mm-group">
+      <label class="mm-label">AI 灵性接口（主系统已保存预设）：</label>
+      <div class="custom-drop-header" id="aiProfileHeader" onclick="toggleCustomDrop('aiProfileMenu')">
+        <span id="aiProfileValText">正在加载接口预设...</span>
+        <span class="custom-drop-arrow">▼</span>
       </div>
-      <div class="dialog-foot">
-        <button type="button" class="dialog-btn cancel" id="btn-dialog-cancel">取消</button>
-        <div class="dialog-divider"></div>
-        <button type="button" class="dialog-btn confirm" id="btn-dialog-confirm">确定</button>
-      </div>
+      <div class="custom-drop-menu" id="aiProfileMenu"></div>
+    </div>
+
+    <div class="mm-btns">
+      <button class="btn btn-gold" style="padding:6px 18px; font-size:.82rem;" onclick="closeMysticSettings()">取消</button>
+      <button class="btn btn-purple" style="padding:6px 20px; font-size:.82rem;" onclick="saveMysticSettings()">保存设置</button>
     </div>
   </div>
+</div>
 
-  <!-- 浮层弹窗：真实对白凭据回溯 -->
-  <div class="rem-modal-mask" id="evidence-modal" hidden>
-    <div class="rem-modal-box">
-      <div class="rem-modal-head">
-        <div class="rem-modal-title">真实对白凭据</div>
-        <button type="button" class="rem-modal-close" data-close="evidence-modal">×</button>
-      </div>
-      <div class="rem-modal-body">
-        <div class="evidence-origin-badge" id="evidence-origin-badge">对话留底</div>
-        <div class="evidence-quote-box" id="evidence-quote-box"></div>
-        <div class="evidence-meta-row">
-          <span class="lbl">记录时刻</span>
-          <span class="val" id="evidence-time-val">-</span>
+<script>
+// ==================== 退出回桌面（写入桌面直达契约） ====================
+function exitToDesktop() {
+  try {
+    sessionStorage.setItem('mcyt_skip_lock_screen', 'true');
+    sessionStorage.setItem('mcyt_return_desktop_page', '1');
+  } catch (_) {}
+  if (window.history.length > 1) {
+    window.history.back();
+  } else {
+    window.location.href = '../index.html';
+  }
+}
+
+// 微信微质感浮动轻量 Toast (彻底消除丑陋原生 alert)
+function showTarotToast(msg, duration = 1800) {
+  const old = document.getElementById('tarotToastEl');
+  if (old) old.remove();
+
+  const toast = document.createElement('div');
+  toast.id = 'tarotToastEl';
+  toast.className = 'wechat-toast-pill';
+  toast.innerHTML = `<span>${escapeHtml(msg)}</span>`;
+  document.body.appendChild(toast);
+
+  setTimeout(() => {
+    if (toast) {
+      toast.style.opacity = '0';
+      toast.style.transition = 'opacity 0.25s ease-out';
+      setTimeout(() => toast.remove(), 250);
+    }
+  }, duration);
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+// ==================== 牌库数据 ====================
+const MAJOR = [
+  { id:0, name:'愚者', img:'0.jpg', up:'纯粹初心·无畏冒险·新的可能', rev:'鲁莽冲动·缺乏方向·天真过头' },
+  { id:1, name:'魔术师', img:'1.jpg', up:'显化意志·创造充沛·万事俱备', rev:'才华受阻·沟通断层·缺乏自信' },
+  { id:2, name:'女祭司', img:'2.jpg', up:'直觉敏锐·洞悉潜意识·静待时机', rev:'忽视内心·情绪波动·秘密浮现' },
+  { id:3, name:'皇后', img:'3.jpg', up:'丰饶富足·温暖滋养·灵感涌动', rev:'灵感枯竭·过度依赖·自我忽视' },
+  { id:4, name:'皇帝', img:'4.jpg', up:'秩序威严·掌控稳固·理性规划', rev:'固执僵化·控制过度·规则冲突' },
+  { id:5, name:'教皇', img:'5.jpg', up:'智慧传承·良师指路·团队共鸣', rev:'墨守成规·认知偏差·非传统途径' },
+  { id:6, name:'恋人', img:'6.jpg', up:'真诚共鸣·默契契合·重要抉择', rev:'关系隔阂·价值观碰撞·犹豫不决' },
+  { id:7, name:'战车', img:'7.jpg', up:'意志克难·专注前行·凯旋在望', rev:'方向摇摆·缺乏耐力·用力过猛' },
+  { id:8, name:'力量', img:'8.jpg', up:'以柔克刚·坚定包容·内在无畏', rev:'内心焦灼·自我怀疑·耐性耗尽' },
+  { id:9, name:'隐士', img:'9.jpg', up:'深沉省思·向内探寻·明灯在前', rev:'过度孤立·拒绝指引·封闭自我' },
+  { id:10, name:'命运之轮', img:'10.jpg', up:'顺势而为·契机转折·因果流转', rev:'抗拒变动·逆势对抗·需要打破循环' },
+  { id:11, name:'正义', img:'11.jpg', up:'客观理性·责任清晰·真相大白', rev:'判断失衡·逃避担当·偏见干扰' },
+  { id:12, name:'倒吊人', img:'12.jpg', up:'换位思考·主动沉淀·以退为进', rev:'无谓牺牲·原地固步·不愿放手' },
+  { id:13, name:'死神', img:'13.jpg', up:'蜕变重生·告别过往·翻开新章', rev:'紧抓执念·拒绝结束·阻碍新生' },
+  { id:14, name:'节制', img:'14.jpg', up:'平衡调和·从容自洽·融合贯通', rev:'节律失衡·焦躁激进·缺乏耐心' },
+  { id:15, name:'恶魔', img:'15.jpg', up:'看清枷锁·觉察欲望·挣脱诱惑', rev:'重获自由·冲破束缚·重归理性' },
+  { id:16, name:'高塔', img:'16.jpg', up:'打破虚妄·突发顿悟·彻底重塑', rev:'勉强维稳·缓慢耗损·隐患残留' },
+  { id:17, name:'星星', img:'17.jpg', up:'希望之光·灵性能量·疗愈安宁', rev:'信念动摇·自我怀疑·迷失初衷' },
+  { id:18, name:'月亮', img:'18.jpg', up:'潜意识探索·穿越迷茫·信任直觉', rev:'疑云散去·走出阴霾·真相清朗' },
+  { id:19, name:'太阳', img:'19.jpg', up:'生机勃勃·明朗开朗·达成所愿', rev:'光芒被蔽·短暂延迟·调整心态' },
+  { id:20, name:'审判', img:'20.jpg', up:'听从召唤·脱胎换骨·觉醒新生', rev:'抗拒召唤·沉溺自责·迟迟未决' },
+  { id:21, name:'世界', img:'21.jpg', up:'阶段圆满·融会贯通·广阔宏图', rev:'功亏一篑·收尾迟滞·需补齐细节' }
+];
+
+const SCENARIOS = [
+  { id:'life', name:'人生方向与成长', desc:'方向选择 · 自我探索 · 灵性启示' },
+  { id:'love', name:'情感与人际关系', desc:'伴侣默契 · 沟通隔阂 · 友情走向' },
+  { id:'career', name:'学业与事业发展', desc:'阶段瓶颈 · 机会抉择 · 突破路径' },
+  { id:'inner', name:'内在情绪与身心', desc:'焦虑疏解 · 直觉唤醒 · 能量平衡' }
+];
+
+const SPREADS = {
+  single: { name:'单张牌阵（核心启示）', count:1, pos:['核心能量'] },
+  triple: { name:'三张牌阵（时间流）', count:3, pos:['过去的影响','当下的状态','未来的趋势'] }
+};
+
+let appState = {
+  scenario: 'life',
+  spreadKey: 'triple',
+  drawnCards: [],
+  flippedCount: 0
+};
+
+function goStage(id) {
+  document.querySelectorAll('.stage').forEach(s => s.classList.remove('active'));
+  document.getElementById('stage-' + id).classList.add('active');
+  window.scrollTo({ top:0, behavior:'smooth' });
+
+  if (id === 'scenario') renderScenarios();
+  if (id === 'spread') renderSpreads();
+}
+
+function renderScenarios() {
+  const g = document.getElementById('scenarioGrid');
+  g.innerHTML = SCENARIOS.map(s => `
+    <div class="scenario-card ${appState.scenario===s.id?'selected':''}" onclick="chooseScenario('${s.id}')">
+      <div class="sc-name">${s.name}</div>
+      <div class="sc-desc">${s.desc}</div>
+    </div>
+  `).join('');
+  document.getElementById('btnScenarioNext').disabled = false;
+}
+function chooseScenario(id) {
+  appState.scenario = id;
+  renderScenarios();
+}
+
+function renderSpreads() {
+  const o = document.getElementById('spreadOptions');
+  o.innerHTML = Object.entries(SPREADS).map(([k, sp]) => `
+    <div class="scenario-card ${appState.spreadKey===k?'selected':''}" onclick="chooseSpread('${k}')">
+      <div class="sc-name">${sp.name}</div>
+      <div class="sc-desc">抽取 ${sp.count} 张卡牌深入解析</div>
+    </div>
+  `).join('');
+  document.getElementById('btnSpreadNext').disabled = false;
+}
+function chooseSpread(k) {
+  appState.spreadKey = k;
+  renderSpreads();
+}
+
+function startDrawCards() {
+  goStage('draw');
+  const sp = SPREADS[appState.spreadKey];
+  const pool = [...MAJOR].sort(() => Math.random() - 0.5);
+  appState.drawnCards = pool.slice(0, sp.count).map(c => Object.assign({}, c, { reversed: Math.random() < 0.4 }));
+  appState.flippedCount = 0;
+
+  const row = document.getElementById('spreadCardsRow');
+  row.innerHTML = appState.drawnCards.map((c, i) => `
+    <div class="tarot-card-box" id="tcard-${i}" onclick="flipCard(${i})">
+      <div class="tarot-card-inner">
+        <div class="tarot-face tarot-back"></div>
+        <div class="tarot-face tarot-front ${c.reversed?'reversed':''}">
+          <img src="images/${c.img}" alt="${c.name}">
+          <div class="tarot-front-bar">${c.name}${c.reversed?' (逆)':''}</div>
         </div>
-        <div class="evidence-meta-row">
-          <span class="lbl">所属角色</span>
-          <span class="val" id="evidence-npc-val">-</span>
-        </div>
-      </div>
-      <div class="rem-modal-foot">
-        <button type="button" class="rem-btn primary" data-close="evidence-modal">翻阅完毕</button>
       </div>
     </div>
-  </div>
+  `).join('');
 
-  <!-- 浮层弹窗：手动收纳角色记忆 -->
-  <div class="rem-modal-mask" id="ingest-modal" hidden>
-    <div class="rem-modal-box">
-      <div class="rem-modal-head">
-        <div class="rem-modal-title">收纳角色记忆</div>
-        <button type="button" class="rem-modal-close" data-close="ingest-modal">×</button>
+  document.getElementById('readingBox').style.display = 'none';
+  document.getElementById('btnRestart').style.display = 'none';
+}
+
+function flipCard(idx) {
+  const el = document.getElementById('tcard-' + idx);
+  if (!el || el.classList.contains('flipped')) return;
+  el.classList.add('flipped');
+  appState.flippedCount++;
+
+  const sp = SPREADS[appState.spreadKey];
+  if (appState.flippedCount >= sp.count) {
+    setTimeout(showResultReadings, 600);
+  }
+}
+
+function showResultReadings() {
+  const sp = SPREADS[appState.spreadKey];
+  const box = document.getElementById('readingBox');
+  const detail = document.getElementById('readingDetail');
+
+  detail.innerHTML = appState.drawnCards.map((c, i) => `
+    <div class="reading-item">
+      <div style="font-size:.8rem; color:var(--purple-glow); font-weight:700;">
+        ${sp.pos[i]} · ${c.name} (${c.reversed?'▼ 逆位':'▲ 正位'})
       </div>
-      <div class="rem-modal-body">
-        <label class="form-label" for="ingest-npc-select">记忆所属联系人</label>
-        <div class="custom-select-wrap">
-          <select id="ingest-npc-select" class="form-select"></select>
-        </div>
-
-        <label class="form-label" for="ingest-text">记忆内容描述</label>
-        <textarea id="ingest-text" class="form-textarea" rows="3" placeholder="记录一句该角色深刻的约定、喜好或性格细节..."></textarea>
-
-        <label class="form-label" for="ingest-tags">记忆标签（空格分隔）</label>
-        <input id="ingest-tags" type="text" class="form-input" placeholder="例如: 约定 习惯 生日" />
-
-        <div class="form-row">
-          <label class="form-label" for="ingest-salience">记忆深刻度: <span id="salience-val-text">0.8</span></label>
-          <input id="ingest-salience" type="range" min="0.1" max="1.0" step="0.1" value="0.8" class="form-range" />
-        </div>
-      </div>
-      <div class="rem-modal-foot btn-group">
-        <button type="button" class="rem-btn cancel" data-close="ingest-modal">取消</button>
-        <button type="button" class="rem-btn primary" id="btn-save-ingest">确认收纳</button>
+      <div style="font-size:.82rem; color:var(--text-sub); margin-top:2px;">
+        ${c.reversed ? c.rev : c.up}
       </div>
     </div>
-  </div>
+  `).join('');
 
-  <!-- 仿微信居中 Toast -->
-  <div class="rem-toast" id="toast-msg" hidden></div>
+  box.style.display = 'block';
+  document.getElementById('btnRestart').style.display = 'inline-flex';
+  box.scrollIntoView({ behavior:'smooth', block:'start' });
+}
 
-  <script type="module" src="main.js"></script>
+// 自动穿透读取主系统 API 接口
+function getActiveAIConfig() {
+  try {
+    const raw = localStorage.getItem('mc_yt_ai_config') || localStorage.getItem('mcyt_ai_config');
+    if (raw) {
+      const p = JSON.parse(raw);
+      if (p.apiKey || p.baseUrl) return p;
+    }
+  } catch (_) {}
+  return {
+    baseUrl: localStorage.getItem('tarot_ai_base_url') || 'https://api.openai.com/v1',
+    apiKey: localStorage.getItem('tarot_ai_api_key') || '',
+    model: localStorage.getItem('tarot_ai_model') || 'gpt-4o-mini'
+  };
+}
+
+async function invokeAIReading() {
+  const cfg = getActiveAIConfig();
+  if (!cfg.apiKey) {
+    showTarotToast('请先在系统设置中配置大模型 API Key');
+    return;
+  }
+
+  const btn = document.getElementById('btnCallAI');
+  const out = document.getElementById('aiTextResult');
+  btn.disabled = true;
+  out.textContent = '正在沟通星盘轨迹，聆听古老智慧指引...';
+
+  const userQ = document.getElementById('customQ').value.trim() || '综合每日能量探索';
+  const sp = SPREADS[appState.spreadKey];
+  let prompt = `你是一位学识深邃、语言兼具文学性与洞察力的现代灵性塔罗导师。\n问卜者心中的提问：【${userQ}】\n牌阵：${sp.name}\n牌面呈现：\n`;
+  appState.drawnCards.forEach((c, idx) => {
+    prompt += `${idx+1}. 【${sp.pos[idx]}】：${c.name} (${c.reversed?'逆位':'正位'})，牌义：${c.reversed?c.rev:c.up}\n`;
+  });
+  prompt += `\n请给出一段直击心灵、富有结构和温暖疗愈感的深度解牌分析，并附上切实行动指引。杜绝机械说教。`;
+
+  try {
+    let url = cfg.baseUrl.replace(/\/+$/, '');
+    if (!url.endsWith('/chat/completions')) url += '/chat/completions';
+
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${cfg.apiKey}`
+      },
+      body: JSON.stringify({
+        model: cfg.model || 'gpt-4o-mini',
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    const data = await res.json();
+    let reply = (data.choices && data.choices[0] && data.choices[0].message) ? data.choices[0].message.content : '解读未获取到响应。';
+    reply = reply.replace(/[\s\S]*?<\/think>/gi, '').trim();
+    out.textContent = reply;
+  } catch (err) {
+    out.textContent = '解读发生异常：' + err.message;
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+// ==================== 🌟 微信原生质感转发与多轨安全存储 ====================
+function getCandidateChatTargets() {
+  const list = [];
+  const addedIds = new Set();
+
+  // 1. 如果是在同一页面（比如测试或嵌入容器）
+  if (window.parent && window.parent.G && window.parent.G.npcs) {
+    Object.values(window.parent.G.npcs).forEach(n => {
+      if (!addedIds.has(n.id)) {
+        addedIds.add(n.id);
+        list.push({ id: n.id, name: n.remark ? `${n.remark} (${n.name})` : n.name, avatar: n.avatarUrl || 'images/card_back.png', isGroup: false });
+      }
+    });
+    Object.values(window.parent.G.groups || {}).forEach(g => {
+      list.push({ id: g.id, name: `[群] ${g.name}`, avatar: g.avatarUrl || 'images/card_back.png', isGroup: true });
+    });
+    return list;
+  }
+
+  // 2. 从本地自建角色备份 key (mcyt_wechat_custom_npcs)
+  try {
+    const raw = localStorage.getItem('mcyt_wechat_custom_npcs');
+    if (raw) {
+      const npcs = JSON.parse(raw);
+      Object.values(npcs).forEach(n => {
+        if (n && n.id && !addedIds.has(n.id)) {
+          addedIds.add(n.id);
+          list.push({ id: n.id, name: n.remark ? `${n.remark} (${n.name})` : n.name, avatar: n.avatarUrl || 'images/card_back.png', isGroup: false });
+        }
+      });
+    }
+  } catch (_) {}
+
+  // 3. 从自动存档 (mcyt_autosave) 中提取 npcs
+  try {
+    const raw = localStorage.getItem('mcyt_autosave');
+    if (raw) {
+      const s = JSON.parse(raw);
+      if (s && s.npcs) {
+        Object.values(s.npcs).forEach(n => {
+          if (n && n.id && !addedIds.has(n.id)) {
+            addedIds.add(n.id);
+            list.push({ id: n.id, name: n.remark ? `${n.remark} (${n.name})` : n.name, avatar: n.avatarUrl || 'images/card_back.png', isGroup: false });
+          }
+        });
+      }
+    }
+  } catch (_) {}
+
+  // 4. 兜底官方角色池（确保初次游玩时也绝对有联系人可选）
+  const officialDefaults = [
+    { id: 'npc_dream', name: 'Dream' },
+    { id: 'npc_george', name: 'George' },
+    { id: 'npc_sapnap', name: 'Sapnap' },
+    { id: 'npc_badboyhalo', name: 'BadBoyHalo' },
+    { id: 'npc_tommy', name: 'TommyInnit' }
+  ];
+  officialDefaults.forEach(def => {
+    if (!addedIds.has(def.id)) {
+      addedIds.add(def.id);
+      list.push({ id: def.id, name: def.name, avatar: 'images/card_back.png', isGroup: false });
+    }
+  });
+
+  return list;
+}
+
+function openShareTarotModal() {
+  if (!appState.drawnCards || !appState.drawnCards.length) {
+    showTarotToast('请先完成抽牌');
+    return;
+  }
+
+  const targets = getCandidateChatTargets();
+  const scrollBox = document.getElementById('shareContactList');
+
+  scrollBox.innerHTML = targets.map(t => `
+    <div class="wechat-contact-row" onclick="doSendTarotToChat('${t.id}', ${t.isGroup}, '${escapeHtml(t.name)}')">
+      <div style="display:flex; align-items:center; gap:9px; min-width:0; flex:1;">
+        <div style="width:34px; height:34px; border-radius:5px; overflow:hidden; background:#e8e8e8; flex-shrink:0;">
+          <img src="${t.avatar}" style="width:100%; height:100%; object-fit:cover;" onerror="this.src='images/card_back.png';">
+        </div>
+        <span style="font-size:13.5px; color:#181818; font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(t.name)}</span>
+      </div>
+      <span class="wechat-send-tag">发送 ›</span>
+    </div>
+  `).join('');
+
+  document.getElementById('shareTarotModal').style.display = 'flex';
+}
+
+function closeShareTarotModal() {
+  document.getElementById('shareTarotModal').style.display = 'none';
+}
+
+function doSendTarotToChat(targetId, isGroup, targetName) {
+  const sp = SPREADS[appState.spreadKey];
+  const userQ = document.getElementById('customQ').value.trim() || '综合每日能量探索';
+  const cardSummary = appState.drawnCards.map((c, i) => `${sp.pos[i]}:${c.name}(${c.reversed?'逆':'正'})`).join(' / ');
+
+  const tarotMsg = {
+    _id: 'tarot_' + Date.now(),
+    from: 'player',
+    isPlayer: true,
+    senderName: '我',
+    type: 'shared_tarot',
+    text: `[分享了塔罗牌阵] 【${sp.name}】${cardSummary}`,
+    sharedTarot: {
+      question: userQ,
+      spreadKey: appState.spreadKey,
+      spreadName: sp.name,
+      cards: appState.drawnCards.map((c, i) => ({
+        position: sp.pos[i],
+        name: c.name,
+        reversed: c.reversed,
+        meaning: c.reversed ? c.rev : c.up,
+        img: c.img
+      })),
+      time: new Date().toLocaleTimeString().slice(0, 5)
+    },
+    time: new Date().toLocaleTimeString().slice(0, 5),
+    timestamp: Date.now()
+  };
+
+  // 🌟 双轨安全队列持久化：写入待吸收通道 mcyt_pending_shared_tarot
+  try {
+    let pendingQueue = [];
+    const rawQueue = localStorage.getItem('mcyt_pending_shared_tarot');
+    if (rawQueue) pendingQueue = JSON.parse(rawQueue);
+    if (!Array.isArray(pendingQueue)) pendingQueue = [];
+    pendingQueue.push({
+      targetId,
+      isGroup,
+      msg: tarotMsg
+    });
+    localStorage.setItem('mcyt_pending_shared_tarot', JSON.stringify(pendingQueue));
+  } catch (e) {
+    console.warn('写入待处理队列异常:', e);
+  }
+
+  // 同时也尝试平滑写入主存档 mcyt_autosave（若存在）
+  try {
+    const autoRaw = localStorage.getItem('mcyt_autosave');
+    if (autoRaw) {
+      const s = JSON.parse(autoRaw);
+      if (!s.chatHistory) s.chatHistory = {};
+      const key = `main_${targetId}`;
+      if (!s.chatHistory[key]) s.chatHistory[key] = [];
+      s.chatHistory[key].push(tarotMsg);
+      localStorage.setItem('mcyt_autosave', JSON.stringify(s));
+    }
+  } catch (_) {}
+
+  // 若运行在同一个 window 环境下，直接推送
+  if (window.parent && window.parent.G && typeof window.parent.pushChatMessageSafe === 'function') {
+    try {
+      const curAcc = (typeof window.parent.getActiveAccountInfo === 'function') ? window.parent.getActiveAccountInfo() : { id: 'main' };
+      window.parent.pushChatMessageSafe(targetId, tarotMsg, curAcc.id);
+      if (typeof window.parent.autoSaveGame === 'function') window.parent.autoSaveGame();
+    } catch (_) {}
+  }
+
+  closeShareTarotModal();
+  showTarotToast(`已转发给「${targetName}」`);
+}
+
+function resetAll() {
+  goStage('welcome');
+}
+
+// ==================== 自渲染黑金折叠设置面板 ====================
+let pendingConfig = {
+  widgetEnabled: 'true',
+  widgetSpread: 'triple',
+  aiProfileIndex: 'default'
+};
+
+function toggleCustomDrop(menuId) {
+  const target = document.getElementById(menuId);
+  const isOpen = target.classList.contains('open');
+  document.querySelectorAll('.custom-drop-menu').forEach(m => m.classList.remove('open'));
+  document.querySelectorAll('.custom-drop-header').forEach(h => h.classList.remove('open'));
+  if (!isOpen) {
+    target.classList.add('open');
+    target.previousElementSibling.classList.add('open');
+  }
+}
+
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.mm-group')) {
+    document.querySelectorAll('.custom-drop-menu').forEach(m => m.classList.remove('open'));
+    document.querySelectorAll('.custom-drop-header').forEach(h => h.classList.remove('open'));
+  }
+});
+
+function selectDropVal(type, val, label) {
+  if (type === 'widgetEnabled') {
+    pendingConfig.widgetEnabled = val;
+    document.getElementById('widgetEnabledValText').textContent = label;
+  } else if (type === 'widgetSpread') {
+    pendingConfig.widgetSpread = val;
+    document.getElementById('widgetSpreadValText').textContent = label;
+  } else if (type === 'aiProfile') {
+    pendingConfig.aiProfileIndex = val;
+    document.getElementById('aiProfileValText').textContent = label;
+  }
+  document.querySelectorAll('.custom-drop-menu').forEach(m => m.classList.remove('open'));
+  document.querySelectorAll('.custom-drop-header').forEach(h => h.classList.remove('open'));
+}
+
+function openMysticSettings() {
+  const modal = document.getElementById('mysticSettingsModal');
+  const wEnabled = localStorage.getItem('mcyt_widget_tarot_enabled') !== 'false';
+  const wSpread = localStorage.getItem('mcyt_widget_tarot_spread') || 'triple';
+
+  pendingConfig.widgetEnabled = wEnabled ? 'true' : 'false';
+  pendingConfig.widgetSpread = wSpread;
+  document.getElementById('widgetEnabledValText').textContent = wEnabled ? '开启显示（推荐）' : '隐藏组件';
+  document.getElementById('widgetSpreadValText').textContent = (wSpread === 'triple') ? '三张牌阵（过去·现在·未来）' : '单张牌阵（每日核心启示）';
+
+  const menu = document.getElementById('aiProfileMenu');
+  menu.innerHTML = '';
+
+  const mainCfg = getActiveAIConfig();
+  let defaultItem = document.createElement('div');
+  defaultItem.className = 'custom-drop-item';
+  defaultItem.textContent = `主系统正在使用的配置 (${mainCfg.model || '未设定'})`;
+  defaultItem.onclick = () => selectDropVal('aiProfile', 'default', `主系统配置 (${mainCfg.model || '未设定'})`);
+  menu.appendChild(defaultItem);
+
+  let activeLabel = `主系统配置 (${mainCfg.model || '未设定'})`;
+
+  let rawList = null;
+  try {
+    const raw = localStorage.getItem('mcyt_ai_profiles');
+    rawList = raw ? JSON.parse(raw) : null;
+  } catch (_) {}
+
+  if (Array.isArray(rawList) && rawList.length) {
+    rawList.forEach((p, idx) => {
+      let item = document.createElement('div');
+      item.className = 'custom-drop-item';
+      const pModel = (p.config && p.config.model) || '未知模型';
+      const displayName = p.name || pModel || ('预设 ' + (idx + 1));
+      const title = `备注：${displayName} (${pModel})`;
+      item.textContent = title;
+      item.onclick = () => selectDropVal('aiProfile', idx.toString(), title);
+      menu.appendChild(item);
+    });
+  }
+
+  document.getElementById('aiProfileValText').textContent = activeLabel;
+  modal.style.display = 'flex';
+}
+
+function closeMysticSettings() {
+  document.getElementById('mysticSettingsModal').style.display = 'none';
+}
+
+function saveMysticSettings() {
+  localStorage.setItem('mcyt_widget_tarot_enabled', pendingConfig.widgetEnabled);
+  localStorage.setItem('mcyt_widget_tarot_spread', pendingConfig.widgetSpread);
+
+  if (pendingConfig.aiProfileIndex !== 'default') {
+    let rawList = null;
+    try {
+      const raw = localStorage.getItem('mcyt_ai_profiles');
+      rawList = raw ? JSON.parse(raw) : null;
+    } catch (_) {}
+
+    if (Array.isArray(rawList)) {
+      const p = rawList[parseInt(pendingConfig.aiProfileIndex, 10)];
+      const pc = p && p.config;
+      if (pc) {
+        localStorage.setItem('tarot_ai_base_url', pc.baseUrl || '');
+        localStorage.setItem('tarot_ai_api_key', pc.apiKey || '');
+        localStorage.setItem('tarot_ai_model', pc.model || '');
+      }
+    }
+  } else {
+    localStorage.removeItem('tarot_ai_base_url');
+    localStorage.removeItem('tarot_ai_api_key');
+    localStorage.removeItem('tarot_ai_model');
+  }
+
+  closeMysticSettings();
+  showTarotToast('✦ 设置已成功保存，桌面组件已同步');
+}
+</script>
 </body>
 </html>
