@@ -1,11 +1,14 @@
 /**
  * 忆海 (Rememori) 独立记忆中枢前端驱动核心
- * - 聚合小手机内存对象 G.npcs 与独立持久化 CUSTOM_NPCS_BACKUP_KEY（支持对象与数组形态全面兼容）
+ * - 聚合小手机内存对象 G.npcs 与独立持久化 CUSTOM_NPCS_BACKUP_KEY（全面支持自建与导入角色）
  * - 贯通私聊对白与总结事实缓存（mcyt_rememori_cache_v1）双向同化
+ * - 接入 MemorySummarizer：支持后台独立低价模型静默总结与第三人称客观具名提炼
  * - OpenAI 兼容向量检索 + Reranker 重排序管线
  * - 微信原生居中模型即时过滤弹窗（彻底消除原生 select）
  * - 硅基流动邀请码与模型梯队科普弹窗
  */
+
+import { MemorySummarizer } from './summarizer.js';
 
 const STORAGE_KEYS = {
   HOST_AUTOSAVE: 'mcyt_autosave',
@@ -30,13 +33,20 @@ const state = {
   },
   dialogResolver: null,
   cachedRemoteModels: [], // 缓存拉取到的模型列表
-  currentPickerTarget: 'embed', // 'embed' | 'rerank'
+  currentPickerTarget: 'embed', // 'embed' | 'rerank' | 'summary'
 };
+
+let summarizerInstance = null;
 
 /* ================= 1. 初始化与数据装配 ================= */
 
 async function initRememoriApp() {
   loadConfig();
+  summarizerInstance = new MemorySummarizer({
+    ingestSummaryFacts,
+    showWechatToast: showToast,
+  });
+
   bindDomEvents();
   initBackgroundCanvas();
   loadHostNpcs();
@@ -144,7 +154,6 @@ function loadMemoriesFromStorage() {
       if (typeof parsedEvidence === 'object' && !Array.isArray(parsedEvidence) && parsedEvidence !== null) {
         Object.entries(parsedEvidence).forEach(([key, items]) => {
           if (!Array.isArray(items)) return;
-          // 解析 npcId，key 通常为 "main_xxx" 或直接为 "xxx"
           let targetNpcKey = key.includes('_') ? key.substring(key.indexOf('_') + 1) : key;
           const foundNpc = state.npcs[targetNpcKey] || Object.values(state.npcs).find((n) => n.id === targetNpcKey || n.name === targetNpcKey);
           const targetDisplayName = foundNpc ? (foundNpc.remark || foundNpc.name) : targetNpcKey;
@@ -205,6 +214,26 @@ function saveMemoriesToStorage() {
   } catch (e) {
     console.error('[Rememori] 记忆持久化失败:', e);
   }
+}
+
+// 供 Summarizer 成功后静默调用的方法
+function ingestSummaryFacts(npcName, factsText, originalDialogue) {
+  const newMem = {
+    id: 'mem_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+    npcName,
+    text: factsText,
+    tags: ['客观事实', '长效记忆'],
+    salience: 0.95,
+    timestamp: Date.now(),
+    source: '智能后台总结',
+    rawQuote: originalDialogue ? originalDialogue.slice(0, 300) : factsText,
+    embedding: null,
+  };
+
+  state.memories.unshift(newMem);
+  saveMemoriesToStorage();
+  renderMemoryList();
+  updateOverviewStats();
 }
 
 /* ================= 2. 向量嵌入与 Reranker 检索管线 ================= */
@@ -389,7 +418,6 @@ function renderFilterCapsules() {
   const ingestSelect = document.getElementById('ingest-npc-select');
   if (!container) return;
 
-  // 整理所有角色名字（去重并优先使用备注或真实名字）
   const roleNameMap = new Map();
 
   Object.values(state.npcs).forEach((npc) => {
@@ -509,7 +537,10 @@ function openModelPicker(targetType) {
   const searchInput = document.getElementById('picker-search-input');
 
   if (!modal) return;
-  titleEl.textContent = targetType === 'embed' ? '选择 Embedding 向量模型' : '选择 Reranker 重排序模型';
+  if (targetType === 'embed') titleEl.textContent = '选择 Embedding 向量模型';
+  else if (targetType === 'rerank') titleEl.textContent = '选择 Reranker 重排序模型';
+  else titleEl.textContent = '选择记忆总结专用模型';
+
   if (searchInput) searchInput.value = '';
 
   renderPickerList('');
@@ -521,9 +552,10 @@ function renderPickerList(filterKeyword) {
   const container = document.getElementById('model-options-list');
   if (!container) return;
 
-  const currentVal = state.currentPickerTarget === 'embed'
-    ? document.getElementById('cfg-embed-model').value.trim()
-    : document.getElementById('cfg-rerank-model').value.trim();
+  let currentVal = '';
+  if (state.currentPickerTarget === 'embed') currentVal = document.getElementById('cfg-embed-model').value.trim();
+  else if (state.currentPickerTarget === 'rerank') currentVal = document.getElementById('cfg-rerank-model').value.trim();
+  else currentVal = document.getElementById('cfg-summary-model').value.trim();
 
   const kw = filterKeyword.toLowerCase().trim();
   const filtered = state.cachedRemoteModels.filter((m) => !kw || m.toLowerCase().includes(kw));
@@ -538,6 +570,7 @@ function renderPickerList(filterKeyword) {
     let tag = '';
     if (m.toLowerCase().includes('rerank')) tag = '<span class="model-option-tag">重排</span>';
     else if (m.toLowerCase().includes('embed') || m.toLowerCase().includes('bge')) tag = '<span class="model-option-tag">向量</span>';
+    else tag = '<span class="model-option-tag" style="background:#eef6ff;color:#2563eb;">对话</span>';
 
     return `
       <div class="model-option-item ${isSelected ? 'active' : ''}" data-model="${escapeHtml(m)}">
@@ -552,8 +585,10 @@ function renderPickerList(filterKeyword) {
       const selected = item.dataset.model;
       if (state.currentPickerTarget === 'embed') {
         document.getElementById('cfg-embed-model').value = selected;
-      } else {
+      } else if (state.currentPickerTarget === 'rerank') {
         document.getElementById('cfg-rerank-model').value = selected;
+      } else {
+        document.getElementById('cfg-summary-model').value = selected;
       }
       document.getElementById('model-picker-modal').hidden = true;
       showToast(`已选择 ${selected}`);
@@ -562,8 +597,18 @@ function renderPickerList(filterKeyword) {
 }
 
 async function fetchRemoteModelsAndOpen(targetType) {
-  const apiUrl = document.getElementById('cfg-api-url').value.trim();
-  const apiKey = document.getElementById('cfg-api-key').value.trim();
+  let apiUrl = document.getElementById('cfg-api-url').value.trim();
+  let apiKey = document.getElementById('cfg-api-key').value.trim();
+
+  if (targetType === 'summary') {
+    const useHost = document.getElementById('cfg-summary-use-host').checked;
+    if (!useHost) {
+      const cUrl = document.getElementById('cfg-summary-api-url').value.trim();
+      const cKey = document.getElementById('cfg-summary-api-key').value.trim();
+      if (cUrl) apiUrl = cUrl;
+      if (cKey) apiKey = cKey;
+    }
+  }
 
   if (!apiKey) {
     showToast('请先填写 API 密钥');
@@ -642,6 +687,19 @@ function openSettingsModal() {
   document.getElementById('cfg-rerank-model').value = state.config.rerankModel || '';
   document.getElementById('cfg-enable-vector').checked = !!state.config.vectorEnabled;
 
+  // 装配总结模块配置
+  if (summarizerInstance) {
+    const sCfg = summarizerInstance.config;
+    const useHostChk = document.getElementById('cfg-summary-use-host');
+    const customPanel = document.getElementById('panel-custom-summary-api');
+    if (useHostChk) useHostChk.checked = !!sCfg.useHostApi;
+    if (customPanel) customPanel.style.display = sCfg.useHostApi ? 'none' : 'block';
+
+    document.getElementById('cfg-summary-api-url').value = sCfg.customApiUrl || '';
+    document.getElementById('cfg-summary-api-key').value = sCfg.customApiKey || '';
+    document.getElementById('cfg-summary-model').value = sCfg.summaryModel || 'deepseek-ai/DeepSeek-V3';
+  }
+
   modal.hidden = false;
 }
 
@@ -691,13 +749,23 @@ function bindDomEvents() {
   const btnSaveSettings = document.getElementById('btn-save-settings');
   const btnPickEmbed = document.getElementById('btn-pick-embed');
   const btnPickRerank = document.getElementById('btn-pick-rerank');
+  const btnPickSummary = document.getElementById('btn-pick-summary-model');
   const btnInfoEngine = document.getElementById('btn-info-engine');
   const btnInfoEmbed = document.getElementById('btn-info-embed');
   const btnInfoRerank = document.getElementById('btn-info-rerank');
+  const useHostChk = document.getElementById('cfg-summary-use-host');
 
   if (btnOpenSettings) btnOpenSettings.addEventListener('click', openSettingsModal);
   if (btnPickEmbed) btnPickEmbed.addEventListener('click', () => fetchRemoteModelsAndOpen('embed'));
   if (btnPickRerank) btnPickRerank.addEventListener('click', () => fetchRemoteModelsAndOpen('rerank'));
+  if (btnPickSummary) btnPickSummary.addEventListener('click', () => fetchRemoteModelsAndOpen('summary'));
+
+  if (useHostChk) {
+    useHostChk.addEventListener('change', (e) => {
+      const customPanel = document.getElementById('panel-custom-summary-api');
+      if (customPanel) customPanel.style.display = e.target.checked ? 'none' : 'block';
+    });
+  }
 
   if (btnInfoEngine) btnInfoEngine.addEventListener('click', () => { document.getElementById('engine-info-modal').hidden = false; });
   if (btnInfoEmbed) btnInfoEmbed.addEventListener('click', () => { document.getElementById('embed-info-modal').hidden = false; });
@@ -721,6 +789,16 @@ function bindDomEvents() {
       state.config.vectorEnabled = document.getElementById('cfg-enable-vector').checked;
 
       saveConfig();
+
+      if (summarizerInstance) {
+        summarizerInstance.saveConfig({
+          useHostApi: document.getElementById('cfg-summary-use-host').checked,
+          customApiUrl: document.getElementById('cfg-summary-api-url').value.trim(),
+          customApiKey: document.getElementById('cfg-summary-api-key').value.trim(),
+          summaryModel: document.getElementById('cfg-summary-model').value.trim() || 'deepseek-ai/DeepSeek-V3',
+        });
+      }
+
       document.getElementById('settings-modal').hidden = true;
       updateHeaderEngineState();
       renderMemoryList();
@@ -824,9 +902,15 @@ function bindDomEvents() {
     });
   }
 
-  // 跨窗口同步监听
+  // 跨窗口同步监听（含后台静默总结总线）
   window.addEventListener('message', (event) => {
-    if (event.data && (event.data.type === 'DEPOSIT_REMEMORI_EVIDENCE' || event.data.type === 'NPCS_UPDATED')) {
+    if (!event.data) return;
+
+    if (event.data.type === 'TRIGGER_REMEMORI_SUMMARY') {
+      if (summarizerInstance) {
+        summarizerInstance.enqueueTask(event.data);
+      }
+    } else if (event.data.type === 'DEPOSIT_REMEMORI_EVIDENCE' || event.data.type === 'NPCS_UPDATED') {
       loadHostNpcs();
       loadMemoriesFromStorage();
       renderFilterCapsules();

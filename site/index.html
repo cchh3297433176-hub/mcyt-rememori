@@ -28,7 +28,7 @@
       </div>
 
       <div class="header-actions">
-        <button type="button" class="icon-nav-btn" id="btn-open-settings" aria-label="向量配置">
+        <button type="button" class="icon-nav-btn" id="btn-open-settings" aria-label="向量与总结配置">
           <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="12" cy="12" r="3"></circle>
             <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
@@ -109,17 +109,17 @@
 
   </main>
 
-  <!-- 浮层弹窗：向量与 Reranker 记忆模型设置 -->
+  <!-- 浮层弹窗：向量检索与静默总结模型配置 -->
   <div class="rem-modal-mask" id="settings-modal" hidden>
     <div class="rem-modal-box">
       <div class="rem-modal-head">
-        <div class="rem-modal-title">向量与重排记忆配置</div>
+        <div class="rem-modal-title">记忆中枢与总结配置</div>
         <div class="head-right-actions">
           <button type="button" class="question-icon-btn" id="btn-info-engine" title="什么是向量与重排？">?</button>
           <button type="button" class="rem-modal-close" data-close="settings-modal">×</button>
         </div>
       </div>
-      <div class="rem-modal-body">
+      <div class="rem-modal-body scrollable">
         
         <!-- 邀请码与快速开通胶囊 -->
         <div class="promo-box" id="btn-open-promo">
@@ -130,10 +130,14 @@
           <div class="promo-arrow">›</div>
         </div>
 
-        <label class="form-label" for="cfg-api-url">API 接口地址 (Base URL)</label>
+        <div style="font-size:12px;font-weight:600;color:#07c160;margin:8px 0 4px;border-bottom:0.5px solid #eee;padding-bottom:3px;">
+          一、高维向量检索 (Embedding & Reranker)
+        </div>
+
+        <label class="form-label" for="cfg-api-url">向量 API 接口地址 (Base URL)</label>
         <input id="cfg-api-url" type="url" class="form-input" placeholder="https://api.siliconflow.cn/v1" />
 
-        <label class="form-label" for="cfg-api-key">API 密钥 (API Key)</label>
+        <label class="form-label" for="cfg-api-key">向量 API 密钥 (API Key)</label>
         <input id="cfg-api-key" type="password" class="form-input" placeholder="sk-..." autocomplete="off" />
 
         <!-- 向量模型选择 -->
@@ -162,10 +166,41 @@
 
         <div class="form-row toggle-row">
           <div>
-            <div class="toggle-title">启用语义高维检索</div>
-            <div class="toggle-desc">未配置时自动降级为本地多维关键词权重计算</div>
+            <div class="toggle-title">启用高维向量语义追忆</div>
+            <div class="toggle-desc">未开启时自动降级为本地多维关键词权重计算</div>
           </div>
           <input id="cfg-enable-vector" type="checkbox" class="wechat-switch" />
+        </div>
+
+        <!-- 🧠 独立记忆总结专用配置通道 -->
+        <div style="font-size:12px;font-weight:600;color:#07c160;margin:16px 0 4px;border-bottom:0.5px solid #eee;padding-bottom:3px;">
+          二、后台记忆总结专用通道 (实惠低价模型)
+        </div>
+
+        <div class="form-row toggle-row" style="margin-bottom:8px;">
+          <div>
+            <div class="toggle-title">继承小手机主设置 API</div>
+            <div class="toggle-desc">使用系统设置中心已配好的 Base URL 与 Key</div>
+          </div>
+          <input id="cfg-summary-use-host" type="checkbox" class="wechat-switch" checked />
+        </div>
+
+        <div id="panel-custom-summary-api" style="display:none;">
+          <label class="form-label" for="cfg-summary-api-url">总结专用 API Base URL</label>
+          <input id="cfg-summary-api-url" type="url" class="form-input" placeholder="https://api.siliconflow.cn/v1" />
+
+          <label class="form-label" for="cfg-summary-api-key">总结专用 API Key</label>
+          <input id="cfg-summary-api-key" type="password" class="form-input" placeholder="sk-..." autocomplete="off" />
+        </div>
+
+        <div class="model-select-group">
+          <div class="label-with-action">
+            <div class="label-with-help">
+              <label class="form-label" for="cfg-summary-model">记忆总结模型 (建议低价模型)</label>
+            </div>
+            <button type="button" class="link-btn" id="btn-pick-summary-model">拉取并选择</button>
+          </div>
+          <input id="cfg-summary-model" type="text" class="form-input" placeholder="例如: deepseek-ai/DeepSeek-V3" />
         </div>
 
       </div>
