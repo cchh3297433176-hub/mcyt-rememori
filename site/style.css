@@ -1,13 +1,13 @@
 /* ==========================================================================
-   忆海 (Rememori) 独立沙盒样式
-   微信原生微绿极简设计规范（纯白卡片 #ffffff，浅灰底色 #f7f7f7，原生微绿 #07c160）
+   忆海 (Rememori) 微信原生微绿极简设计
+   彻底消灭粉白与精致土，手机沉浸穿透，圆角卡片，原生微绿 #07c160
    ========================================================================== */
 
 :root {
   --rem-bg: #f7f7f7;
   --rem-card: #ffffff;
   --rem-border: #eeeeee;
-  --rem-border-subtle: #f0f0f0;
+  --rem-border-subtle: #f2f2f2;
   --rem-text: #181818;
   --rem-text-sub: #777777;
   --rem-text-muted: #999999;
@@ -15,7 +15,7 @@
   --rem-green-pressed: #06ad56;
   --rem-green-wash: #e8f7ee;
   --rem-danger: #fa5151;
-  --rem-status-bar-height: 38px;
+  --status-bar-height: 38px;
   --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
   --safe-transition: 180ms cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -41,7 +41,7 @@ html, body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* 背景微粒画布（保持克制、浅微绿晶体感） */
+/* 背景流动微粒，纯静微绿 */
 #field {
   position: fixed;
   top: 0;
@@ -49,49 +49,63 @@ html, body {
   width: 100vw;
   height: 100vh;
   z-index: 0;
-  opacity: 0.35;
+  opacity: 0.28;
   pointer-events: none;
 }
 
-/* ================= 顶栏适配 ================= */
+/* ================= 顶栏适配与状态栏穿透 ================= */
 .app-header {
   position: sticky;
   top: 0;
   left: 0;
   right: 0;
   z-index: 100;
-  background: rgba(247, 247, 247, 0.94);
-  backdrop-filter: blur(12px);
+  background: rgba(247, 247, 247, 0.95);
+  backdrop-filter: blur(16px);
   border-bottom: 1px solid var(--rem-border);
-  padding-top: var(--rem-status-bar-height);
+}
+
+/* 状态栏穿透安全留白：不遮挡手机时钟与电量 */
+.status-bar-spacer {
+  height: var(--status-bar-height);
+  width: 100%;
 }
 
 .header-inner {
-  height: 48px;
+  height: 46px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0 12px;
 }
 
-.back-btn {
+.icon-nav-btn {
   display: inline-flex;
   align-items: center;
-  gap: 2px;
+  gap: 3px;
   background: none;
   border: none;
   color: var(--rem-text);
   font-size: 15px;
   font-weight: 500;
   padding: 6px 8px;
-  margin-left: -6px;
   border-radius: 6px;
   cursor: pointer;
   transition: background var(--safe-transition);
 }
 
-.back-btn:active {
+.icon-nav-btn:active {
   background: rgba(0, 0, 0, 0.05);
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.icon-nav-btn.primary {
+  color: var(--rem-green);
 }
 
 .app-title {
@@ -109,48 +123,30 @@ html, body {
 
 .title-sub {
   font-size: 10px;
-  color: var(--rem-text-muted);
-  letter-spacing: 0.5px;
-}
-
-.action-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  background: var(--rem-green-wash);
-  border: 1px solid rgba(7, 193, 96, 0.2);
   color: var(--rem-green);
-  font-size: 13px;
-  font-weight: 600;
-  padding: 4px 10px;
-  border-radius: 14px;
-  cursor: pointer;
-  transition: all var(--safe-transition);
+  background: var(--rem-green-wash);
+  padding: 1px 6px;
+  border-radius: 8px;
+  margin-top: 1px;
 }
 
-.action-btn:active {
-  background: var(--rem-green);
-  color: #ffffff;
-}
-
-/* ================= 主体流式容器 ================= */
+/* ================= 主体内容 ================= */
 .app-main {
   position: relative;
   z-index: 1;
-  padding: 12px;
-  padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
-  max-width: 600px;
+  padding: 10px 12px calc(24px + env(safe-area-inset-bottom, 0px)) 12px;
+  max-width: 580px;
   margin: 0 auto;
 }
 
-/* 概览卡片 */
+/* 概览统计卡片 */
 .overview-card {
   background: var(--rem-card);
   border-radius: 12px;
-  padding: 14px 12px;
+  padding: 12px 10px;
   border: 1px solid var(--rem-border-subtle);
-  margin-bottom: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  margin-bottom: 10px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
 }
 
 .stat-grid {
@@ -179,11 +175,11 @@ html, body {
 
 .stat-divider {
   width: 1px;
-  height: 24px;
+  height: 22px;
   background: var(--rem-border);
 }
 
-/* 追忆检索框 */
+/* 追忆检索条 */
 .search-section {
   margin-bottom: 10px;
 }
@@ -220,10 +216,6 @@ html, body {
   padding: 0;
 }
 
-.search-box input::placeholder {
-  color: var(--rem-text-muted);
-}
-
 .clear-btn {
   background: #ebebeb;
   color: #666666;
@@ -240,9 +232,15 @@ html, body {
   margin-left: 6px;
 }
 
-/* 胶囊筛选栏 */
+.search-hint {
+  font-size: 11px;
+  color: var(--rem-green);
+  padding: 4px 6px 0 6px;
+}
+
+/* 角色胶囊滚动条 */
 .filter-section {
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
 
 .filter-capsules {
@@ -282,15 +280,11 @@ html, body {
 }
 
 /* 记忆列表 */
-.memory-stream-section {
-  position: relative;
-}
-
 .section-meta {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  padding: 0 4px 8px 4px;
+  padding: 0 4px 6px 4px;
 }
 
 .meta-title {
@@ -307,10 +301,9 @@ html, body {
 .memory-list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 9px;
 }
 
-/* 记忆卡片 */
 .memory-card {
   background: var(--rem-card);
   border-radius: 10px;
@@ -320,7 +313,7 @@ html, body {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  transition: transform var(--safe-transition);
+  transition: background var(--safe-transition);
 }
 
 .memory-card:active {
@@ -339,12 +332,20 @@ html, body {
   gap: 6px;
 }
 
-.tag-badge {
+.npc-badge {
   background: var(--rem-green-wash);
   color: var(--rem-green);
   font-size: 11px;
   font-weight: 600;
-  padding: 2px 7px;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.tag-badge {
+  background: #f2f2f2;
+  color: #666666;
+  font-size: 11px;
+  padding: 2px 6px;
   border-radius: 4px;
 }
 
@@ -358,7 +359,7 @@ html, body {
 }
 
 .card-text {
-  font-size: 14.5px;
+  font-size: 14px;
   color: var(--rem-text);
   line-height: 1.5;
   word-break: break-word;
@@ -381,7 +382,7 @@ html, body {
 
 .card-actions {
   display: flex;
-  gap: 8px;
+  gap: 10px;
 }
 
 .card-btn {
@@ -390,7 +391,7 @@ html, body {
   font-size: 12px;
   color: var(--rem-green);
   cursor: pointer;
-  padding: 2px 4px;
+  padding: 0 2px;
 }
 
 .card-btn.delete {
@@ -401,13 +402,12 @@ html, body {
 .empty-state {
   background: var(--rem-card);
   border-radius: 10px;
-  padding: 36px 20px;
+  padding: 38px 20px;
   text-align: center;
   border: 1px dashed var(--rem-border);
 }
 
 .empty-icon {
-  font-size: 32px;
   margin-bottom: 8px;
 }
 
@@ -426,7 +426,7 @@ html, body {
   margin: 0 auto;
 }
 
-/* ================= 通用微信质感居中弹窗 ================= */
+/* ================= 极简微信居中弹窗 ================= */
 .rem-modal-mask {
   position: fixed;
   inset: 0;
@@ -454,7 +454,7 @@ html, body {
 }
 
 @keyframes modalPop {
-  from { opacity: 0; transform: scale(0.95); }
+  from { opacity: 0; transform: scale(0.96); }
   to { opacity: 1; transform: scale(1); }
 }
 
@@ -462,7 +462,7 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 16px;
+  padding: 13px 16px;
   border-bottom: 1px solid var(--rem-border);
 }
 
@@ -483,13 +483,13 @@ html, body {
 }
 
 .rem-modal-body {
-  padding: 16px;
-  max-height: 60vh;
+  padding: 14px 16px;
+  max-height: 65vh;
   overflow-y: auto;
 }
 
 .rem-modal-foot {
-  padding: 12px 16px;
+  padding: 11px 16px;
   background: #fcfcfc;
   border-top: 1px solid var(--rem-border);
   display: flex;
@@ -504,7 +504,7 @@ html, body {
   font-family: inherit;
   font-size: 14px;
   font-weight: 500;
-  padding: 8px 18px;
+  padding: 7px 18px;
   border-radius: 6px;
   border: none;
   cursor: pointer;
@@ -529,7 +529,198 @@ html, body {
   background: #e2e2e2;
 }
 
-/* 凭据展示细节 */
+.rem-btn.sub {
+  background: var(--rem-green-wash);
+  color: var(--rem-green);
+}
+
+/* 渠道推广卡片 */
+.promo-box {
+  background: var(--rem-green-wash);
+  border: 1px solid rgba(7, 193, 96, 0.2);
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  margin-bottom: 12px;
+  transition: background var(--safe-transition);
+}
+
+.promo-box:active {
+  background: #def3e6;
+}
+
+.promo-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--rem-green);
+}
+
+.promo-sub {
+  font-size: 11px;
+  color: #058f46;
+  margin-top: 1px;
+}
+
+.promo-arrow {
+  font-size: 16px;
+  color: var(--rem-green);
+  font-weight: 700;
+}
+
+.promo-text {
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--rem-text);
+  margin: 0 0 10px 0;
+}
+
+.promo-subtext {
+  font-size: 11.5px;
+  color: var(--rem-text-muted);
+  line-height: 1.4;
+  margin: 10px 0 0 0;
+}
+
+.link-copy-box {
+  background: #f7f7f7;
+  border: 1px solid var(--rem-border);
+  border-radius: 6px;
+  padding: 8px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.link-copy-box code {
+  font-family: inherit;
+  font-size: 12px;
+  color: var(--rem-text);
+  word-break: break-all;
+  user-select: text;
+}
+
+/* 表单输入与开关 */
+.form-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--rem-text-sub);
+  margin-bottom: 5px;
+  margin-top: 10px;
+}
+
+.form-label:first-child {
+  margin-top: 0;
+}
+
+.label-with-action {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-top: 10px;
+  margin-bottom: 5px;
+}
+
+.label-with-action .form-label {
+  margin: 0;
+}
+
+.link-btn {
+  background: none;
+  border: none;
+  font-size: 11.5px;
+  color: var(--rem-green);
+  cursor: pointer;
+  padding: 0;
+}
+
+.field-tip {
+  font-size: 11px;
+  color: var(--rem-text-muted);
+}
+
+.form-input, .form-textarea, .form-select {
+  width: 100%;
+  border: 1px solid var(--rem-border);
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: 13.5px;
+  color: var(--rem-text);
+  font-family: inherit;
+  background: #ffffff;
+}
+
+.form-input:focus, .form-textarea:focus, .form-select:focus {
+  border-color: var(--rem-green);
+}
+
+.custom-select-wrap select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' width='14' height='14' fill='none' stroke='%23888' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' xmlns='http://www.w3.org/2000/svg'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+}
+
+.form-row.toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 12px;
+  margin-top: 12px;
+  border-top: 1px solid var(--rem-border);
+}
+
+.toggle-title {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--rem-text);
+}
+
+.toggle-desc {
+  font-size: 11px;
+  color: var(--rem-text-sub);
+}
+
+/* 微信微绿 Switch */
+.wechat-switch {
+  position: relative;
+  width: 44px;
+  height: 24px;
+  appearance: none;
+  background: #e5e5e5;
+  outline: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+
+.wechat-switch::before {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 20px;
+  height: 20px;
+  background: #ffffff;
+  border-radius: 50%;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.wechat-switch:checked {
+  background: var(--rem-green);
+}
+
+.wechat-switch:checked::before {
+  transform: translateX(20px);
+}
+
+/* 对白凭据浮层 */
 .evidence-origin-badge {
   display: inline-block;
   font-size: 11px;
@@ -538,18 +729,18 @@ html, body {
   background: var(--rem-green-wash);
   padding: 2px 8px;
   border-radius: 4px;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 
 .evidence-quote-box {
   background: #f7f7f7;
   border-left: 3px solid var(--rem-green);
-  padding: 10px 12px;
+  padding: 9px 12px;
   font-size: 13.5px;
   color: #333333;
   line-height: 1.5;
   border-radius: 0 6px 6px 0;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
   user-select: text;
 }
 
@@ -557,7 +748,7 @@ html, body {
   display: flex;
   justify-content: space-between;
   font-size: 12px;
-  padding: 4px 0;
+  padding: 3px 0;
 }
 
 .evidence-meta-row .lbl {
@@ -569,44 +760,86 @@ html, body {
   font-weight: 500;
 }
 
-/* 表单输入样式 */
-.form-label {
-  display: block;
-  font-size: 12px;
+/* ================= 微信极简居中 Dialog ================= */
+.dialog-box {
+  max-width: 290px;
+  text-align: center;
+  border-radius: 12px;
+}
+
+.dialog-body {
+  padding: 22px 18px 18px 18px;
+}
+
+.dialog-title {
+  font-size: 16px;
   font-weight: 600;
-  color: var(--rem-text-sub);
-  margin-bottom: 6px;
-  margin-top: 10px;
-}
-
-.form-label:first-child {
-  margin-top: 0;
-}
-
-.form-input, .form-textarea {
-  width: 100%;
-  border: 1px solid var(--rem-border);
-  border-radius: 6px;
-  padding: 8px 10px;
-  font-size: 14px;
   color: var(--rem-text);
-  font-family: inherit;
-  background: #ffffff;
+  margin-bottom: 8px;
 }
 
-.form-input:focus, .form-textarea:focus {
-  border-color: var(--rem-green);
+.dialog-content {
+  font-size: 13.5px;
+  color: var(--rem-text-sub);
+  line-height: 1.45;
 }
 
-.form-textarea {
-  resize: none;
+.dialog-foot {
+  display: flex;
+  align-items: center;
+  border-top: 1px solid var(--rem-border);
 }
 
-.form-row {
-  margin-top: 12px;
+.dialog-btn {
+  flex: 1;
+  background: none;
+  border: none;
+  padding: 13px 0;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
 }
 
-.form-range {
-  width: 100%;
-  accent-color: var(--rem-green);
+.dialog-btn.cancel {
+  color: var(--rem-text);
+}
+
+.dialog-btn.cancel:active {
+  background: #f7f7f7;
+}
+
+.dialog-btn.confirm {
+  color: var(--rem-danger);
+  font-weight: 600;
+}
+
+.dialog-btn.confirm:active {
+  background: #f7f7f7;
+}
+
+.dialog-divider {
+  width: 1px;
+  height: 48px;
+  background: var(--rem-border);
+}
+
+/* 仿微信居中 Toast */
+.rem-toast {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(30, 30, 30, 0.88);
+  color: #ffffff;
+  padding: 9px 18px;
+  border-radius: 8px;
+  font-size: 13.5px;
+  z-index: 2000;
+  pointer-events: none;
+  animation: toastFade 200ms ease;
+}
+
+@keyframes toastFade {
+  from { opacity: 0; transform: translate(-50%, -46%); }
+  to { opacity: 1; transform: translate(-50%, -50%); }
 }

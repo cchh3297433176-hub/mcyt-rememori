@@ -8,29 +8,39 @@
 </head>
 <body>
 
-  <!-- 轻量动态记忆微粒背景画布 -->
+  <!-- 轻量背景微粒画布 -->
   <canvas id="field" aria-hidden="true"></canvas>
 
-  <!-- 顶部原生沉浸导航栏 -->
+  <!-- 顶部原生微信质感沉浸导航栏（穿透手机状态栏） -->
   <header class="app-header">
+    <div class="status-bar-spacer"></div>
     <div class="header-inner">
-      <button type="button" class="back-btn" id="btn-back" aria-label="返回小手机桌面">
-        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <button type="button" class="icon-nav-btn" id="btn-back" aria-label="返回小手机桌面">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <polyline points="15 18 9 12 15 6"></polyline>
         </svg>
         <span>桌面</span>
       </button>
+
       <div class="app-title">
         <span class="title-main">忆海</span>
-        <span class="title-sub">Rememori 记忆中枢</span>
+        <span class="title-sub" id="header-engine-mode">本地混合检索</span>
       </div>
-      <button type="button" class="action-btn" id="btn-open-ingest" aria-label="收纳新记忆">
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="12" y1="5" x2="12" y2="19"></line>
-          <line x1="5" y1="12" x2="19" y2="12"></line>
-        </svg>
-        <span>收纳</span>
-      </button>
+
+      <div class="header-actions">
+        <button type="button" class="icon-nav-btn" id="btn-open-settings" aria-label="向量配置">
+          <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+          </svg>
+        </button>
+        <button type="button" class="icon-nav-btn primary" id="btn-open-ingest" aria-label="收纳新记忆">
+          <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+        </button>
+      </div>
     </div>
   </header>
 
@@ -41,17 +51,17 @@
       <div class="stat-grid">
         <div class="stat-item">
           <div class="stat-val" id="stat-total-memories">0</div>
-          <div class="stat-lbl">往昔记忆</div>
+          <div class="stat-lbl">角色往昔</div>
         </div>
         <div class="stat-divider"></div>
         <div class="stat-item">
           <div class="stat-val" id="stat-active-evidence">0</div>
-          <div class="stat-lbl">真实凭据</div>
+          <div class="stat-lbl">真实对白凭据</div>
         </div>
         <div class="stat-divider"></div>
         <div class="stat-item">
-          <div class="stat-val" id="stat-index-state">就绪</div>
-          <div class="stat-lbl">引擎状态</div>
+          <div class="stat-val" id="stat-index-state">本地</div>
+          <div class="stat-lbl">检索管线</div>
         </div>
       </div>
     </section>
@@ -59,26 +69,25 @@
     <!-- 追忆检索框 -->
     <section class="search-section">
       <div class="search-box">
-        <svg class="search-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <svg class="search-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="11" cy="11" r="8"></circle>
           <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
         </svg>
-        <input id="search-input" type="search" autocomplete="off" placeholder="在记忆之海中追忆（人物、约定、细节）..." />
+        <input id="search-input" type="search" autocomplete="off" placeholder="按语义或关键词追忆（人物约定、喜好、回忆）..." />
         <button type="button" id="btn-clear-search" class="clear-btn" aria-label="清空搜索" hidden>×</button>
       </div>
+      <div class="search-hint" id="search-feedback" hidden>正在进行向量与重排精算...</div>
     </section>
 
-    <!-- 角色与身份筛选胶囊条 -->
+    <!-- 专属角色联系人胶囊条（自动聚合所有内置与自建NPC） -->
     <section class="filter-section">
       <div class="filter-capsules" id="filter-capsules">
-        <button type="button" class="capsule active" data-filter="all">全量记忆</button>
-        <button type="button" class="capsule" data-filter="main">主播大号</button>
-        <button type="button" class="capsule" data-filter="alt">小号轨迹</button>
-        <!-- 动态由脚本装配角色标签 -->
+        <button type="button" class="capsule active" data-filter="all">全角色</button>
+        <!-- 动态装配 NPC 角色列表 -->
       </div>
     </section>
 
-    <!-- 记忆列表 -->
+    <!-- 记忆流列表 -->
     <section class="memory-stream-section">
       <div class="section-meta">
         <span class="meta-title" id="stream-meta-title">记忆列表</span>
@@ -86,67 +95,174 @@
       </div>
 
       <div class="memory-list" id="memory-list">
-        <!-- 默认空状态 -->
+        <!-- 空状态卡片 -->
         <div class="empty-state" id="empty-state">
-          <div class="empty-icon">🌱</div>
-          <div class="empty-title">暂无相关往昔记忆</div>
-          <div class="empty-desc">聊天中的重要互动与约定会自动沉淀至此，你也可以点击右上角手动收纳。</div>
+          <div class="empty-icon">
+            <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="#999999" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8z"></path>
+              <path d="M12 6v6l4 2"></path>
+            </svg>
+          </div>
+          <div class="empty-title">暂无该角色的往昔记忆</div>
+          <div class="empty-desc">在聊天中与联系人对话，系统会自动将关键信息萃取并沉淀为记忆凭据。</div>
         </div>
       </div>
     </section>
 
   </main>
 
-  <!-- 浮层弹窗：真实凭据（证据链）回溯 -->
+  <!-- 浮层弹窗：向量与 Reranker 记忆模型设置 -->
+  <div class="rem-modal-mask" id="settings-modal" hidden>
+    <div class="rem-modal-box">
+      <div class="rem-modal-head">
+        <div class="rem-modal-title">向量与重排记忆配置</div>
+        <button type="button" class="rem-modal-close" data-close="settings-modal">×</button>
+      </div>
+      <div class="rem-modal-body">
+        
+        <!-- 邀请码与快速开通胶囊 -->
+        <div class="promo-box" id="btn-open-promo">
+          <div class="promo-info">
+            <div class="promo-title">快速获取向量与 Reranker 渠道</div>
+            <div class="promo-sub">免费千万 Token 额度 · 支持高维向量与重排</div>
+          </div>
+          <div class="promo-arrow">›</div>
+        </div>
+
+        <label class="form-label" for="cfg-api-url">API 接口地址 (Base URL)</label>
+        <input id="cfg-api-url" type="url" class="form-input" placeholder="https://api.siliconflow.cn/v1" />
+
+        <label class="form-label" for="cfg-api-key">API 密钥 (API Key)</label>
+        <input id="cfg-api-key" type="password" class="form-input" placeholder="sk-..." autocomplete="off" />
+
+        <!-- 向量模型选择 -->
+        <div class="model-select-group">
+          <div class="label-with-action">
+            <label class="form-label" for="cfg-embed-model">Embedding 向量模型</label>
+            <button type="button" class="link-btn" id="btn-fetch-models">拉取可用模型</button>
+          </div>
+          <input id="cfg-embed-model" type="text" class="form-input" placeholder="例如: BAAI/bge-m3" />
+        </div>
+
+        <!-- 重排序模型选择 -->
+        <div class="model-select-group">
+          <div class="label-with-action">
+            <label class="form-label" for="cfg-rerank-model">Reranker 重排序模型 (选填)</label>
+            <span class="field-tip">二次精排增强准确率</span>
+          </div>
+          <input id="cfg-rerank-model" type="text" class="form-input" placeholder="例如: BAAI/bge-reranker-v2-m3" />
+        </div>
+
+        <div class="form-row toggle-row">
+          <div>
+            <div class="toggle-title">启用语义高维检索</div>
+            <div class="toggle-desc">未配置时将优雅回退为本地关键词与权重计算</div>
+          </div>
+          <input id="cfg-enable-vector" type="checkbox" class="wechat-switch" />
+        </div>
+
+      </div>
+      <div class="rem-modal-foot btn-group">
+        <button type="button" class="rem-btn cancel" data-close="settings-modal">取消</button>
+        <button type="button" class="rem-btn primary" id="btn-save-settings">保存配置</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 浮层弹窗：专属硅基流动邀请码展示 -->
+  <div class="rem-modal-mask" id="promo-modal" hidden>
+    <div class="rem-modal-box">
+      <div class="rem-modal-head">
+        <div class="rem-modal-title">专属向量模型渠道</div>
+        <button type="button" class="rem-modal-close" data-close="promo-modal">×</button>
+      </div>
+      <div class="rem-modal-body">
+        <p class="promo-text">此为软件创作者的硅基流动专属邀请链接。通过该链接注册即可获赠专属额度，并免额度畅享多款主流 Embedding 向量与 Reranker 重排序模型：</p>
+        <div class="link-copy-box">
+          <code id="promo-url-text">https://cloud.siliconflow.cn/i/IJNUaNtb</code>
+          <button type="button" class="rem-btn sub" id="btn-copy-promo">复制链接</button>
+        </div>
+        <p class="promo-subtext">如需在浏览器中注册，可复制链接至外部浏览器打开（邀请码已自动附带，请勿删除）。</p>
+      </div>
+      <div class="rem-modal-foot">
+        <button type="button" class="rem-btn primary" data-close="promo-modal">我知道了</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 浮层弹窗：微信白灰简约确认框（替代系统原生 confirm/alert） -->
+  <div class="rem-modal-mask" id="dialog-modal" hidden>
+    <div class="rem-modal-box dialog-box">
+      <div class="rem-modal-body dialog-body">
+        <div class="dialog-title" id="dialog-title">提示</div>
+        <div class="dialog-content" id="dialog-content">确定要执行此操作吗？</div>
+      </div>
+      <div class="dialog-foot">
+        <button type="button" class="dialog-btn cancel" id="btn-dialog-cancel">取消</button>
+        <div class="dialog-divider"></div>
+        <button type="button" class="dialog-btn confirm" id="btn-dialog-confirm">确定</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 浮层弹窗：真实对白凭据回溯 -->
   <div class="rem-modal-mask" id="evidence-modal" hidden>
     <div class="rem-modal-box">
       <div class="rem-modal-head">
-        <div class="rem-modal-title">真实凭据回溯</div>
-        <button type="button" class="rem-modal-close" id="btn-close-evidence">×</button>
+        <div class="rem-modal-title">真实对白凭据</div>
+        <button type="button" class="rem-modal-close" data-close="evidence-modal">×</button>
       </div>
-      <div class="rem-modal-body" id="evidence-modal-body">
-        <div class="evidence-origin-badge" id="evidence-origin-badge">对话来源</div>
+      <div class="rem-modal-body">
+        <div class="evidence-origin-badge" id="evidence-origin-badge">对话留底</div>
         <div class="evidence-quote-box" id="evidence-quote-box"></div>
         <div class="evidence-meta-row">
           <span class="lbl">记录时刻</span>
           <span class="val" id="evidence-time-val">-</span>
         </div>
         <div class="evidence-meta-row">
-          <span class="lbl">关联角色</span>
+          <span class="lbl">所属角色</span>
           <span class="val" id="evidence-npc-val">-</span>
         </div>
       </div>
       <div class="rem-modal-foot">
-        <button type="button" class="rem-btn primary" id="btn-confirm-evidence">了解</button>
+        <button type="button" class="rem-btn primary" data-close="evidence-modal">翻阅完毕</button>
       </div>
     </div>
   </div>
 
-  <!-- 浮层弹窗：手动收纳记忆 -->
+  <!-- 浮层弹窗：手动收纳角色记忆 -->
   <div class="rem-modal-mask" id="ingest-modal" hidden>
     <div class="rem-modal-box">
       <div class="rem-modal-head">
-        <div class="rem-modal-title">收纳往昔记忆</div>
-        <button type="button" class="rem-modal-close" id="btn-close-ingest">×</button>
+        <div class="rem-modal-title">收纳角色记忆</div>
+        <button type="button" class="rem-modal-close" data-close="ingest-modal">×</button>
       </div>
       <div class="rem-modal-body">
-        <label class="form-label" for="ingest-text">记忆内容描述</label>
-        <textarea id="ingest-text" class="form-textarea" rows="3" placeholder="记录一句深刻的约定、偏好或事实..."></textarea>
+        <label class="form-label" for="ingest-npc-select">记忆所属联系人</label>
+        <div class="custom-select-wrap">
+          <select id="ingest-npc-select" class="form-select"></select>
+        </div>
 
-        <label class="form-label" for="ingest-tags">关联标签（空格分隔）</label>
-        <input id="ingest-tags" type="text" class="form-input" placeholder="例如: 约定 喜好 直播" />
+        <label class="form-label" for="ingest-text">记忆内容描述</label>
+        <textarea id="ingest-text" class="form-textarea" rows="3" placeholder="记录一句该角色深刻的约定、喜好或性格细节..."></textarea>
+
+        <label class="form-label" for="ingest-tags">记忆标签（空格分隔）</label>
+        <input id="ingest-tags" type="text" class="form-input" placeholder="例如: 约定 习惯 生日" />
 
         <div class="form-row">
-          <label class="form-label" for="ingest-salience">深刻度: <span id="salience-val-text">0.8</span></label>
+          <label class="form-label" for="ingest-salience">记忆深刻度: <span id="salience-val-text">0.8</span></label>
           <input id="ingest-salience" type="range" min="0.1" max="1.0" step="0.1" value="0.8" class="form-range" />
         </div>
       </div>
       <div class="rem-modal-foot btn-group">
-        <button type="button" class="rem-btn cancel" id="btn-cancel-ingest">取消</button>
+        <button type="button" class="rem-btn cancel" data-close="ingest-modal">取消</button>
         <button type="button" class="rem-btn primary" id="btn-save-ingest">确认收纳</button>
       </div>
     </div>
   </div>
+
+  <!-- 轻量居中仿微信 Toast -->
+  <div class="rem-toast" id="toast-msg" hidden></div>
 
   <script type="module" src="main.js"></script>
 </body>
