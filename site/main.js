@@ -1,6 +1,7 @@
 /**
  * 忆海 (Rememori) 独立记忆中枢前端驱动核心
- * - 聚合小手机内存对象 G.npcs 与独立持久化 CUSTOM_NPCS_BACKUP_KEY
+ * - 聚合小手机内存对象 G.npcs 与独立持久化 CUSTOM_NPCS_BACKUP_KEY（支持对象与数组形态全面兼容）
+ * - 贯通私聊对白与总结事实缓存（mcyt_rememori_cache_v1）双向同化
  * - OpenAI 兼容向量检索 + Reranker 重排序管线
  * - 微信原生居中模型即时过滤弹窗（彻底消除原生 select）
  * - 硅基流动邀请码与模型梯队科普弹窗
@@ -66,24 +67,31 @@ function saveConfig() {
 }
 
 /**
- * 完整聚合小手机内存对象、自建联系人独立持久化槽与自动存档
+ * 完整聚合小手机内存对象、自建联系人独立持久化槽与自动存档（全面支持自建角色）
  */
 function loadHostNpcs() {
   const mergedNpcs = {};
 
   // 1. 优先读取宿主顶层内存对象 window.parent.G.npcs
   try {
-    if (window.parent && window.parent.G && typeof window.parent.G.npcs === 'object') {
+    if (window.parent && window.parent.G && typeof window.parent.G.npcs === 'object' && window.parent.G.npcs !== null) {
       Object.assign(mergedNpcs, window.parent.G.npcs);
     }
   } catch (_) {}
 
-  // 2. 读取自建联系人独立备份 (CUSTOM_NPCS_BACKUP_KEY)
+  // 2. 读取自建联系人独立备份 (CUSTOM_NPCS_BACKUP_KEY: mcyt_custom_npcs_backup)
   try {
     const rawCustom = localStorage.getItem(STORAGE_KEYS.HOST_CUSTOM_NPCS);
     if (rawCustom) {
       const customNpcs = JSON.parse(rawCustom);
-      if (typeof customNpcs === 'object') {
+      if (Array.isArray(customNpcs)) {
+        customNpcs.forEach((n) => {
+          if (n && (n.id || n.name)) {
+            const key = n.id || n.name;
+            mergedNpcs[key] = n;
+          }
+        });
+      } else if (typeof customNpcs === 'object' && customNpcs !== null) {
         Object.assign(mergedNpcs, customNpcs);
       }
     }
@@ -106,9 +114,9 @@ function loadHostNpcs() {
 
   // 4. 极端空值兜底
   if (Object.keys(mergedNpcs).length === 0) {
-    mergedNpcs.Dream = { name: 'Dream', remark: 'Dream' };
-    mergedNpcs.George = { name: 'George', remark: 'George' };
-    mergedNpcs.Sapnap = { name: 'Sapnap', remark: 'Sapnap' };
+    mergedNpcs.Dream = { id: 'Dream', name: 'Dream', remark: 'Dream' };
+    mergedNpcs.George = { id: 'George', name: 'George', remark: 'George' };
+    mergedNpcs.Sapnap = { id: 'Sapnap', name: 'Sapnap', remark: 'Sapnap' };
   }
 
   state.npcs = mergedNpcs;
@@ -126,13 +134,44 @@ function loadMemoriesFromStorage() {
   // 清除旧测试假数据
   list = list.filter((m) => m.id !== 'mem_init_1' && m.id !== 'mem_init_2');
 
-  // 同化宿主实时对白证据池
+  // 同化宿主实时对白与第三人称总结事实证据池 (mcyt_rememori_cache_v1)
   try {
     const rawEvidence = localStorage.getItem(STORAGE_KEYS.EVIDENCE_CACHE);
     if (rawEvidence) {
-      const evidences = JSON.parse(rawEvidence);
-      if (Array.isArray(evidences)) {
-        evidences.forEach((evi) => {
+      const parsedEvidence = JSON.parse(rawEvidence);
+
+      // 兼容 A: 对象形态字典 { "main_npcId": [ { content, time, timestamp } ] }
+      if (typeof parsedEvidence === 'object' && !Array.isArray(parsedEvidence) && parsedEvidence !== null) {
+        Object.entries(parsedEvidence).forEach(([key, items]) => {
+          if (!Array.isArray(items)) return;
+          // 解析 npcId，key 通常为 "main_xxx" 或直接为 "xxx"
+          let targetNpcKey = key.includes('_') ? key.substring(key.indexOf('_') + 1) : key;
+          const foundNpc = state.npcs[targetNpcKey] || Object.values(state.npcs).find((n) => n.id === targetNpcKey || n.name === targetNpcKey);
+          const targetDisplayName = foundNpc ? (foundNpc.remark || foundNpc.name) : targetNpcKey;
+
+          items.forEach((item) => {
+            const rawContent = item.content || '';
+            const exists = list.some((m) => m.rawQuote === rawContent && Math.abs((m.timestamp || 0) - (item.timestamp || 0)) < 3000);
+            if (!exists && rawContent.length >= 5) {
+              const isSummary = rawContent.includes('[记忆总结事实]');
+              list.unshift({
+                id: 'mem_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+                npcName: targetDisplayName,
+                text: isSummary ? rawContent.replace('[记忆总结事实]:\n', '').trim() : rawContent,
+                tags: isSummary ? ['核心事实', '长效记忆'] : ['对白留底'],
+                salience: isSummary ? 0.95 : 0.8,
+                timestamp: item.timestamp || Date.now(),
+                source: isSummary ? '智能事实凝练' : '私聊交互',
+                rawQuote: rawContent,
+                embedding: null,
+              });
+            }
+          });
+        });
+      }
+      // 兼容 B: 数组形态 [ { id, npcName, text... } ]
+      else if (Array.isArray(parsedEvidence)) {
+        parsedEvidence.forEach((evi) => {
           const exists = list.some(
             (m) => m.evidenceId === evi.id || (m.text === evi.text && m.timestamp === evi.timestamp)
           );
@@ -350,20 +389,30 @@ function renderFilterCapsules() {
   const ingestSelect = document.getElementById('ingest-npc-select');
   if (!container) return;
 
-  const npcKeys = new Set(Object.keys(state.npcs));
+  // 整理所有角色名字（去重并优先使用备注或真实名字）
+  const roleNameMap = new Map();
+
+  Object.values(state.npcs).forEach((npc) => {
+    if (!npc) return;
+    const name = npc.name || npc.id;
+    const displayName = npc.remark ? npc.remark : name;
+    if (displayName) roleNameMap.set(displayName, npc);
+  });
+
   state.memories.forEach((m) => {
-    if (m.npcName) npcKeys.add(m.npcName);
+    if (m.npcName && !roleNameMap.has(m.npcName)) {
+      roleNameMap.set(m.npcName, { name: m.npcName });
+    }
   });
 
   let html = `<button type="button" class="capsule ${state.activeFilter === 'all' ? 'active' : ''}" data-filter="all">全角色</button>`;
   let selectHtml = '';
 
-  npcKeys.forEach((key) => {
-    const npc = state.npcs[key] || { name: key };
-    const label = npc.remark ? `${npc.remark} (${npc.name})` : (npc.name || key);
-    const isActive = state.activeFilter === key;
-    html += `<button type="button" class="capsule ${isActive ? 'active' : ''}" data-filter="${escapeHtml(key)}">${escapeHtml(label)}</button>`;
-    selectHtml += `<option value="${escapeHtml(key)}">${escapeHtml(label)}</option>`;
+  roleNameMap.forEach((npc, displayName) => {
+    const showLabel = npc.remark && npc.name && npc.remark !== npc.name ? `${npc.remark} (${npc.name})` : displayName;
+    const isActive = state.activeFilter === displayName;
+    html += `<button type="button" class="capsule ${isActive ? 'active' : ''}" data-filter="${escapeHtml(displayName)}">${escapeHtml(showLabel)}</button>`;
+    selectHtml += `<option value="${escapeHtml(displayName)}">${escapeHtml(showLabel)}</option>`;
   });
 
   container.innerHTML = html;
@@ -405,7 +454,7 @@ async function renderMemoryList() {
         .map((tag) => `<span class="tag-badge">#${escapeHtml(tag)}</span>`)
         .join('');
 
-      const npcInfo = state.npcs[item.npcName];
+      const npcInfo = Object.values(state.npcs).find(n => (n.remark === item.npcName || n.name === item.npcName || n.id === item.npcName));
       const displayName = npcInfo && npcInfo.remark ? `${npcInfo.remark}` : (item.npcName || '通用联系人');
 
       return `
