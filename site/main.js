@@ -12,7 +12,7 @@ import { MemorySummarizer } from './summarizer.js';
 
 const STORAGE_KEYS = {
   HOST_AUTOSAVE: 'mcyt_autosave',
-  HOST_CUSTOM_NPCS: 'mcyt_custom_npcs_backup',
+  HOST_CUSTOM_NPCS: 'mcyt_wechat_custom_npcs', // 2026-09修复：必须与 chat-common.js 里 CUSTOM_NPCS_BACKUP_KEY 的实际值保持一致，之前两边key名不一致导致自建角色永远读不到
   EVIDENCE_CACHE: 'mcyt_rememori_cache_v1',
   LOCAL_MEMORIES: 'mcyt_rememori_memories_store',
   VECTOR_CONFIG: 'mcyt_rememori_vector_config',
