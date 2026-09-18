@@ -52,10 +52,15 @@ export class MemorySummarizer {
     let hostKey = '';
     let hostModel = '';
     try {
-      const hostState = localStorage.getItem('mcyt_ai_config');
+      // 2026-09修复：这里之前读的key/字段名跟settings-app.js实际写入的对不上，
+      // 导致继承主设置API这条路径实际上永远读不到任何东西，静默回退成空Key。
+      // 实际写入方(settings-app.js第1124/1515/1594行)用的key是 'mc_yt_ai_config'(带下划线)，
+      // 且Base URL字段名是 'baseUrl' 不是 'apiUrl'。这里两个key都兼容读一下，
+      // 字段名也两个都兼容取一下，降低以后再改动名字时又踩同样的坑的概率。
+      const hostState = localStorage.getItem('mc_yt_ai_config') || localStorage.getItem('mcyt_ai_config');
       if (hostState) {
         const parsed = JSON.parse(hostState);
-        hostUrl = parsed.apiUrl || '';
+        hostUrl = parsed.baseUrl || parsed.apiUrl || '';
         hostKey = parsed.apiKey || '';
         hostModel = parsed.model || '';
       }

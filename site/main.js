@@ -602,7 +602,24 @@ async function fetchRemoteModelsAndOpen(targetType) {
 
   if (targetType === 'summary') {
     const useHost = document.getElementById('cfg-summary-use-host').checked;
-    if (!useHost) {
+    if (useHost) {
+      // 2026-09修复：之前这里什么都不做，导致勾选"继承小手机主设置API"时
+      // 实际仍然沿用上面向量API的 apiUrl/apiKey（cfg-api-url/cfg-api-key），
+      // 而不是真正去读设置App保存的配置。这里补上真正的读取逻辑。
+      // 已用 settings-app.js 源码核实确认两处不一致：
+      // 1) 实际写入key是 'mc_yt_ai_config'（带下划线），不是 'mcyt_ai_config'；
+      // 2) Base URL字段名是 'baseUrl'，不是 'apiUrl'。
+      // 下面两个key、两个字段名都做了兼容读取。
+      try {
+        const hostRaw = localStorage.getItem('mc_yt_ai_config') || localStorage.getItem('mcyt_ai_config');
+        if (hostRaw) {
+          const hostCfg = JSON.parse(hostRaw);
+          const hUrl = hostCfg.baseUrl || hostCfg.apiUrl;
+          if (hUrl) apiUrl = hUrl;
+          if (hostCfg.apiKey) apiKey = hostCfg.apiKey;
+        }
+      } catch (_) {}
+    } else {
       const cUrl = document.getElementById('cfg-summary-api-url').value.trim();
       const cKey = document.getElementById('cfg-summary-api-key').value.trim();
       if (cUrl) apiUrl = cUrl;
