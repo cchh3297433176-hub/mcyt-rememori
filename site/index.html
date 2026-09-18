@@ -79,11 +79,10 @@
       <div class="search-hint" id="search-feedback" hidden>正在进行向量与重排精算...</div>
     </section>
 
-    <!-- 专属角色联系人胶囊条（自动聚合所有内置与自建NPC） -->
+    <!-- 专属角色联系人胶囊条 -->
     <section class="filter-section">
       <div class="filter-capsules" id="filter-capsules">
         <button type="button" class="capsule active" data-filter="all">全角色</button>
-        <!-- 动态装配 NPC 角色列表 -->
       </div>
     </section>
 
@@ -95,7 +94,6 @@
       </div>
 
       <div class="memory-list" id="memory-list">
-        <!-- 空状态卡片 -->
         <div class="empty-state" id="empty-state">
           <div class="empty-icon">
             <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="#999999" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -104,7 +102,7 @@
             </svg>
           </div>
           <div class="empty-title">暂无该角色的往昔记忆</div>
-          <div class="empty-desc">在聊天中与联系人对话，系统会自动将关键信息萃取并沉淀为记忆凭据。</div>
+          <div class="empty-desc">在聊天中与联系人对话，关键信息会自动萃取并沉淀为记忆凭据。</div>
         </div>
       </div>
     </section>
@@ -116,7 +114,10 @@
     <div class="rem-modal-box">
       <div class="rem-modal-head">
         <div class="rem-modal-title">向量与重排记忆配置</div>
-        <button type="button" class="rem-modal-close" data-close="settings-modal">×</button>
+        <div class="head-right-actions">
+          <button type="button" class="question-icon-btn" id="btn-info-engine" title="什么是向量与重排？">?</button>
+          <button type="button" class="rem-modal-close" data-close="settings-modal">×</button>
+        </div>
       </div>
       <div class="rem-modal-body">
         
@@ -138,8 +139,11 @@
         <!-- 向量模型选择 -->
         <div class="model-select-group">
           <div class="label-with-action">
-            <label class="form-label" for="cfg-embed-model">Embedding 向量模型</label>
-            <button type="button" class="link-btn" id="btn-fetch-models">拉取可用模型</button>
+            <div class="label-with-help">
+              <label class="form-label" for="cfg-embed-model">Embedding 向量模型</label>
+              <button type="button" class="question-icon-btn inline" id="btn-info-embed" title="查看向量模型梯队与说明">?</button>
+            </div>
+            <button type="button" class="link-btn" id="btn-pick-embed">拉取并选择</button>
           </div>
           <input id="cfg-embed-model" type="text" class="form-input" placeholder="例如: BAAI/bge-m3" />
         </div>
@@ -147,8 +151,11 @@
         <!-- 重排序模型选择 -->
         <div class="model-select-group">
           <div class="label-with-action">
-            <label class="form-label" for="cfg-rerank-model">Reranker 重排序模型 (选填)</label>
-            <span class="field-tip">二次精排增强准确率</span>
+            <div class="label-with-help">
+              <label class="form-label" for="cfg-rerank-model">Reranker 重排序模型</label>
+              <button type="button" class="question-icon-btn inline" id="btn-info-rerank" title="查看重排模型梯队与说明">?</button>
+            </div>
+            <button type="button" class="link-btn" id="btn-pick-rerank">拉取并选择</button>
           </div>
           <input id="cfg-rerank-model" type="text" class="form-input" placeholder="例如: BAAI/bge-reranker-v2-m3" />
         </div>
@@ -156,7 +163,7 @@
         <div class="form-row toggle-row">
           <div>
             <div class="toggle-title">启用语义高维检索</div>
-            <div class="toggle-desc">未配置时将优雅回退为本地关键词与权重计算</div>
+            <div class="toggle-desc">未配置时自动降级为本地多维关键词权重计算</div>
           </div>
           <input id="cfg-enable-vector" type="checkbox" class="wechat-switch" />
         </div>
@@ -169,6 +176,131 @@
     </div>
   </div>
 
+  <!-- 浮层弹窗：仿微信白灰模型即时搜索选择弹窗 -->
+  <div class="rem-modal-mask" id="model-picker-modal" hidden>
+    <div class="rem-modal-box">
+      <div class="rem-modal-head">
+        <div class="rem-modal-title" id="model-picker-title">选择模型</div>
+        <button type="button" class="rem-modal-close" data-close="model-picker-modal">×</button>
+      </div>
+      <div class="rem-modal-body no-pad">
+        <div class="picker-search-box">
+          <input id="picker-search-input" type="search" placeholder="输入关键词快速过滤模型..." />
+        </div>
+        <div class="model-options-list" id="model-options-list">
+          <!-- 动态装配选项 -->
+        </div>
+      </div>
+      <div class="rem-modal-foot">
+        <button type="button" class="rem-btn cancel" data-close="model-picker-modal">关闭</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 浮层弹窗：聊天记忆中枢简明科普 (100~150字) -->
+  <div class="rem-modal-mask" id="engine-info-modal" hidden>
+    <div class="rem-modal-box">
+      <div class="rem-modal-head">
+        <div class="rem-modal-title">记忆引擎如何协同？</div>
+        <button type="button" class="rem-modal-close" data-close="engine-info-modal">×</button>
+      </div>
+      <div class="rem-modal-body">
+        <p class="info-content-p">
+          在聊天时，角色并非机械读全文。<b>向量模型</b>如同雷达，将你的当前发言转化为语义空间坐标，即使字面不同也能瞬间捞出含义相似的历史记忆；<b>Reranker 重排模型</b>则像专属质检员，根据当下的深层语境逐一打分，挑出真正最相关的核心对白提供给角色，让回复如同活人般连贯而深刻。
+        </p>
+      </div>
+      <div class="rem-modal-foot">
+        <button type="button" class="rem-btn primary" data-close="engine-info-modal">了解</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 浮层弹窗：硅基流动向量模型价格与说明 -->
+  <div class="rem-modal-mask" id="embed-info-modal" hidden>
+    <div class="rem-modal-box modal-lg">
+      <div class="rem-modal-head">
+        <div class="rem-modal-title">硅基流动向量模型梯队</div>
+        <button type="button" class="rem-modal-close" data-close="embed-info-modal">×</button>
+      </div>
+      <div class="rem-modal-body scrollable">
+        <div class="price-tier">
+          <div class="tier-title">一、免费档 (0 元)</div>
+          <ul class="tier-list">
+            <li><b>BAAI/bge-m3</b>：多语言通用款，支持 100+ 语言，8K 上下文，跨语言与日常检索表现优秀。</li>
+            <li><b>BAAI/bge-large-zh-v1.5</b>：中文专项优化，中文检索稳定。</li>
+            <li><b>BAAI/bge-large-en-v1.5</b>：英文专项优化款。</li>
+          </ul>
+        </div>
+        <div class="price-tier">
+          <div class="tier-title">二、平价生产档 (约 0.07~0.14 元 / 百万Tokens)</div>
+          <ul class="tier-list">
+            <li><b>Pro/BAAI/bge-m3</b>：免费版同款能力，并发更高、保障更稳（约 0.07 元）。</li>
+            <li><b>Qwen/Qwen3-Embedding-0.6B</b>：轻量高速款，32K 超长上下文（约 0.07 元）。</li>
+            <li><b>Qwen/Qwen3-Embedding-4B</b>：平衡款，长上下文与精度兼备（约 0.14 元）。</li>
+          </ul>
+        </div>
+        <div class="price-tier">
+          <div class="tier-title">三、高精度旗舰档 (约 0.28 元 / 百万Tokens)</div>
+          <ul class="tier-list">
+            <li><b>Qwen/Qwen3-Embedding-8B</b>：32K 超长上下文，多语言顶级水平，长文本理解力强。</li>
+          </ul>
+        </div>
+        <div class="price-tier">
+          <div class="tier-title">四、多模态向量</div>
+          <ul class="tier-list">
+            <li><b>Qwen/Qwen3-VL-Embedding</b>：支持文本、图文等多模态跨域检索。</li>
+          </ul>
+        </div>
+        <p class="price-disclaimer">注：上述梯队与价格仅供参考，官方实际收费可能伴随调整，请以硅基流动官网最新公示为准。</p>
+      </div>
+      <div class="rem-modal-foot">
+        <button type="button" class="rem-btn primary" data-close="embed-info-modal">知道了</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 浮层弹窗：硅基流动 Reranker 重排模型价格与说明 -->
+  <div class="rem-modal-mask" id="rerank-info-modal" hidden>
+    <div class="rem-modal-box modal-lg">
+      <div class="rem-modal-head">
+        <div class="rem-modal-title">硅基流动 Reranker 重排模型梯队</div>
+        <button type="button" class="rem-modal-close" data-close="rerank-info-modal">×</button>
+      </div>
+      <div class="rem-modal-body scrollable">
+        <div class="price-tier">
+          <div class="tier-title">一、免费档 (0 元)</div>
+          <ul class="tier-list">
+            <li><b>BAAI/bge-reranker-v2-m3</b>：多语言通用主流款，8K 上下文，与 bge-m3 向量模型配合契合度极佳，中文重排稳定。</li>
+          </ul>
+        </div>
+        <div class="price-tier">
+          <div class="tier-title">二、平价生产档 (约 0.07 元 / 百万Tokens)</div>
+          <ul class="tier-list">
+            <li><b>Pro/BAAI/bge-reranker-v2-m3</b>：提供更高并发限额与生产保障。</li>
+            <li><b>Qwen/Qwen3-Reranker-0.6B</b>：轻量高速款，32K 上下文，适合实时精排。</li>
+          </ul>
+        </div>
+        <div class="price-tier">
+          <div class="tier-title">三、中高精度档 (约 0.14~0.28 元 / 百万Tokens)</div>
+          <ul class="tier-list">
+            <li><b>Qwen/Qwen3-Reranker-4B</b>：平衡精度与成本（约 0.14 元）。</li>
+            <li><b>Qwen/Qwen3-Reranker-8B</b>：旗舰重排款，长文本与语境关联判断能力极强（约 0.28 元）。</li>
+          </ul>
+        </div>
+        <div class="price-tier">
+          <div class="tier-title">四、多模态重排</div>
+          <ul class="tier-list">
+            <li><b>Qwen/Qwen3-VL-Reranker</b>：支持图文多模态深度重排序。</li>
+          </ul>
+        </div>
+        <p class="price-disclaimer">配套建议：通常向量检索和重排建议同系列搭配使用（如 bge-m3 配 bge-reranker，Qwen3 系列成对搭配）。注：价格可能伴随官方运营策略变动，请以官网实时规则为准。</p>
+      </div>
+      <div class="rem-modal-foot">
+        <button type="button" class="rem-btn primary" data-close="rerank-info-modal">知道了</button>
+      </div>
+    </div>
+  </div>
+
   <!-- 浮层弹窗：专属硅基流动邀请码展示 -->
   <div class="rem-modal-mask" id="promo-modal" hidden>
     <div class="rem-modal-box">
@@ -177,12 +309,12 @@
         <button type="button" class="rem-modal-close" data-close="promo-modal">×</button>
       </div>
       <div class="rem-modal-body">
-        <p class="promo-text">此为软件创作者的硅基流动专属邀请链接。通过该链接注册即可获赠专属额度，并免额度畅享多款主流 Embedding 向量与 Reranker 重排序模型：</p>
+        <p class="promo-text">此为软件创作者的硅基流动专属邀请链接。新用户注册即可获赠专属额度，并免额度畅享多款免费 Embedding 向量与 Reranker 重排序模型：</p>
         <div class="link-copy-box">
           <code id="promo-url-text">https://cloud.siliconflow.cn/i/IJNUaNtb</code>
           <button type="button" class="rem-btn sub" id="btn-copy-promo">复制链接</button>
         </div>
-        <p class="promo-subtext">如需在浏览器中注册，可复制链接至外部浏览器打开（邀请码已自动附带，请勿删除）。</p>
+        <p class="promo-subtext">复制链接至外部浏览器打开即可注册（邀请码已附带，可以的话希望不要删除邀请码哦）。</p>
       </div>
       <div class="rem-modal-foot">
         <button type="button" class="rem-btn primary" data-close="promo-modal">我知道了</button>
@@ -190,7 +322,7 @@
     </div>
   </div>
 
-  <!-- 浮层弹窗：微信白灰简约确认框（替代系统原生 confirm/alert） -->
+  <!-- 浮层弹窗：微信白灰简约确认框 -->
   <div class="rem-modal-mask" id="dialog-modal" hidden>
     <div class="rem-modal-box dialog-box">
       <div class="rem-modal-body dialog-body">
@@ -261,7 +393,7 @@
     </div>
   </div>
 
-  <!-- 轻量居中仿微信 Toast -->
+  <!-- 仿微信居中 Toast -->
   <div class="rem-toast" id="toast-msg" hidden></div>
 
   <script type="module" src="main.js"></script>

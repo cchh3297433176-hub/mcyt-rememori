@@ -41,7 +41,6 @@ html, body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* 背景流动微粒，纯静微绿 */
 #field {
   position: fixed;
   top: 0;
@@ -65,7 +64,6 @@ html, body {
   border-bottom: 1px solid var(--rem-border);
 }
 
-/* 状态栏穿透安全留白：不遮挡手机时钟与电量 */
 .status-bar-spacer {
   height: var(--status-bar-height);
   width: 100%;
@@ -139,7 +137,6 @@ html, body {
   margin: 0 auto;
 }
 
-/* 概览统计卡片 */
 .overview-card {
   background: var(--rem-card);
   border-radius: 12px;
@@ -179,7 +176,7 @@ html, body {
   background: var(--rem-border);
 }
 
-/* 追忆检索条 */
+/* 检索框 */
 .search-section {
   margin-bottom: 10px;
 }
@@ -238,7 +235,7 @@ html, body {
   padding: 4px 6px 0 6px;
 }
 
-/* 角色胶囊滚动条 */
+/* 胶囊条 */
 .filter-section {
   margin-bottom: 10px;
 }
@@ -435,7 +432,7 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 20px;
+  padding: 16px;
   backdrop-filter: blur(4px);
 }
 
@@ -451,6 +448,10 @@ html, body {
   overflow: hidden;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
   animation: modalPop 200ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.rem-modal-box.modal-lg {
+  max-width: 440px;
 }
 
 @keyframes modalPop {
@@ -472,6 +473,12 @@ html, body {
   color: var(--rem-text);
 }
 
+.head-right-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .rem-modal-close {
   background: none;
   border: none;
@@ -482,10 +489,47 @@ html, body {
   padding: 2px 6px;
 }
 
+.question-icon-btn {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--rem-green-wash);
+  border: 1px solid rgba(7, 193, 96, 0.3);
+  color: var(--rem-green);
+  font-size: 12px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  transition: all var(--safe-transition);
+}
+
+.question-icon-btn:active {
+  background: var(--rem-green);
+  color: #ffffff;
+}
+
+.question-icon-btn.inline {
+  width: 17px;
+  height: 17px;
+  font-size: 11px;
+  margin-left: 4px;
+}
+
 .rem-modal-body {
   padding: 14px 16px;
   max-height: 65vh;
   overflow-y: auto;
+}
+
+.rem-modal-body.no-pad {
+  padding: 0;
+}
+
+.rem-modal-body.scrollable {
+  max-height: 68vh;
 }
 
 .rem-modal-foot {
@@ -603,7 +647,7 @@ html, body {
   user-select: text;
 }
 
-/* 表单输入与开关 */
+/* 表单细节 */
 .form-label {
   display: block;
   font-size: 12px;
@@ -620,27 +664,28 @@ html, body {
 .label-with-action {
   display: flex;
   justify-content: space-between;
-  align-items: baseline;
+  align-items: center;
   margin-top: 10px;
   margin-bottom: 5px;
 }
 
-.label-with-action .form-label {
+.label-with-help {
+  display: flex;
+  align-items: center;
+}
+
+.label-with-help .form-label {
   margin: 0;
 }
 
 .link-btn {
   background: none;
   border: none;
-  font-size: 11.5px;
+  font-size: 12px;
   color: var(--rem-green);
   cursor: pointer;
   padding: 0;
-}
-
-.field-tip {
-  font-size: 11px;
-  color: var(--rem-text-muted);
+  font-weight: 500;
 }
 
 .form-input, .form-textarea, .form-select {
@@ -685,7 +730,6 @@ html, body {
   color: var(--rem-text-sub);
 }
 
-/* 微信微绿 Switch */
 .wechat-switch {
   position: relative;
   width: 44px;
@@ -720,7 +764,102 @@ html, body {
   transform: translateX(20px);
 }
 
-/* 对白凭据浮层 */
+/* 模型单选搜索浮层 */
+.picker-search-box {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--rem-border);
+  background: #fbfbfb;
+}
+
+.picker-search-box input {
+  width: 100%;
+  border: 1px solid var(--rem-border);
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 13px;
+  background: #ffffff;
+}
+
+.picker-search-box input:focus {
+  border-color: var(--rem-green);
+}
+
+.model-options-list {
+  max-height: 48vh;
+  overflow-y: auto;
+}
+
+.model-option-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 11px 16px;
+  border-bottom: 1px solid var(--rem-border-subtle);
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--rem-text);
+  transition: background var(--safe-transition);
+}
+
+.model-option-item:active {
+  background: #f5f5f5;
+}
+
+.model-option-item.active {
+  color: var(--rem-green);
+  font-weight: 600;
+  background: #f9fdfa;
+}
+
+.model-option-tag {
+  font-size: 10.5px;
+  color: var(--rem-green);
+  background: var(--rem-green-wash);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+
+/* 科普文字排版 */
+.info-content-p {
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: #333333;
+  margin: 0;
+}
+
+.price-tier {
+  margin-bottom: 12px;
+}
+
+.tier-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--rem-green);
+  margin-bottom: 4px;
+}
+
+.tier-list {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 12.5px;
+  color: #444444;
+  line-height: 1.5;
+}
+
+.tier-list li {
+  margin-bottom: 4px;
+}
+
+.price-disclaimer {
+  font-size: 11px;
+  color: var(--rem-text-muted);
+  line-height: 1.45;
+  border-top: 1px dashed var(--rem-border);
+  padding-top: 8px;
+  margin-top: 10px;
+}
+
+/* 凭据浮层 */
 .evidence-origin-badge {
   display: inline-block;
   font-size: 11px;
@@ -760,7 +899,7 @@ html, body {
   font-weight: 500;
 }
 
-/* ================= 微信极简居中 Dialog ================= */
+/* Dialog */
 .dialog-box {
   max-width: 290px;
   text-align: center;
@@ -823,7 +962,7 @@ html, body {
   background: var(--rem-border);
 }
 
-/* 仿微信居中 Toast */
+/* Toast */
 .rem-toast {
   position: fixed;
   top: 50%;

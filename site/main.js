@@ -1,13 +1,14 @@
 /**
  * 忆海 (Rememori) 独立记忆中枢前端驱动核心
- * - 专属角色记忆池（解绑用户大小号，绑定内置与自建全部 NPC）
- * - 完整集成 Embedding 向量检索 + Reranker 重排序管线
- * - 硅基流动邀请通道配置
- * - 纯微信质感白灰弹窗，零浏览器原生 prompt/confirm/alert
+ * - 聚合小手机内存对象 G.npcs 与独立持久化 CUSTOM_NPCS_BACKUP_KEY
+ * - OpenAI 兼容向量检索 + Reranker 重排序管线
+ * - 微信原生居中模型即时过滤弹窗（彻底消除原生 select）
+ * - 硅基流动邀请码与模型梯队科普弹窗
  */
 
 const STORAGE_KEYS = {
   HOST_AUTOSAVE: 'mcyt_autosave',
+  HOST_CUSTOM_NPCS: 'mcyt_custom_npcs_backup',
   EVIDENCE_CACHE: 'mcyt_rememori_cache_v1',
   LOCAL_MEMORIES: 'mcyt_rememori_memories_store',
   VECTOR_CONFIG: 'mcyt_rememori_vector_config',
@@ -18,7 +19,7 @@ const state = {
   memories: [],
   activeFilter: 'all', // 'all' | npcName
   searchQuery: '',
-  npcs: {}, // { "Dream": { name, remark, ... }, ... }
+  npcs: {}, // 汇聚所有内置与自建 NPC
   config: {
     apiUrl: 'https://api.siliconflow.cn/v1',
     apiKey: '',
@@ -27,6 +28,8 @@ const state = {
     vectorEnabled: false,
   },
   dialogResolver: null,
+  cachedRemoteModels: [], // 缓存拉取到的模型列表
+  currentPickerTarget: 'embed', // 'embed' | 'rerank'
 };
 
 /* ================= 1. 初始化与数据装配 ================= */
@@ -43,9 +46,6 @@ async function initRememoriApp() {
   updateHeaderEngineState();
 }
 
-/**
- * 加载向量与重排配置
- */
 function loadConfig() {
   try {
     const raw = localStorage.getItem(STORAGE_KEYS.VECTOR_CONFIG);
@@ -66,34 +66,54 @@ function saveConfig() {
 }
 
 /**
- * 从小手机存档装配内置与玩家自建 NPC 角色池
+ * 完整聚合小手机内存对象、自建联系人独立持久化槽与自动存档
  */
 function loadHostNpcs() {
+  const mergedNpcs = {};
+
+  // 1. 优先读取宿主顶层内存对象 window.parent.G.npcs
+  try {
+    if (window.parent && window.parent.G && typeof window.parent.G.npcs === 'object') {
+      Object.assign(mergedNpcs, window.parent.G.npcs);
+    }
+  } catch (_) {}
+
+  // 2. 读取自建联系人独立备份 (CUSTOM_NPCS_BACKUP_KEY)
+  try {
+    const rawCustom = localStorage.getItem(STORAGE_KEYS.HOST_CUSTOM_NPCS);
+    if (rawCustom) {
+      const customNpcs = JSON.parse(rawCustom);
+      if (typeof customNpcs === 'object') {
+        Object.assign(mergedNpcs, customNpcs);
+      }
+    }
+  } catch (e) {
+    console.warn('[Rememori] 读取自建联系人备份失败:', e);
+  }
+
+  // 3. 读取底层自动存档中的 npcs 补充兜底
   try {
     const rawAutosave = localStorage.getItem(STORAGE_KEYS.HOST_AUTOSAVE);
     if (rawAutosave) {
-      const data = JSON.parse(rawAutosave);
-      if (data.npcs && typeof data.npcs === 'object') {
-        state.npcs = data.npcs;
+      const saveData = JSON.parse(rawAutosave);
+      if (saveData.npcs && typeof saveData.npcs === 'object') {
+        Object.assign(mergedNpcs, saveData.npcs);
       }
     }
-  } catch (err) {
-    console.warn('[Rememori] 读取 NPC 角色列表失败:', err);
+  } catch (e) {
+    console.warn('[Rememori] 读取自动存档联系人失败:', e);
   }
 
-  // 兜底常用内置角色（防空）
-  if (Object.keys(state.npcs).length === 0) {
-    state.npcs = {
-      Dream: { name: 'Dream', remark: 'Dream' },
-      George: { name: 'George', remark: 'George' },
-      Sapnap: { name: 'Sapnap', remark: 'Sapnap' },
-    };
+  // 4. 极端空值兜底
+  if (Object.keys(mergedNpcs).length === 0) {
+    mergedNpcs.Dream = { name: 'Dream', remark: 'Dream' };
+    mergedNpcs.George = { name: 'George', remark: 'George' };
+    mergedNpcs.Sapnap = { name: 'Sapnap', remark: 'Sapnap' };
   }
+
+  state.npcs = mergedNpcs;
 }
 
-/**
- * 从存储中读取记忆，吸纳宿主沉淀的对话证据，并自动滤除假数据
- */
 function loadMemoriesFromStorage() {
   let list = [];
   try {
@@ -103,10 +123,10 @@ function loadMemoriesFromStorage() {
     console.error('[Rememori] 读取本地记忆失败:', e);
   }
 
-  // 过滤掉以前写死的假数据（如：极限生存联动、界面质感等与角色无关的假记忆）
+  // 清除旧测试假数据
   list = list.filter((m) => m.id !== 'mem_init_1' && m.id !== 'mem_init_2');
 
-  // 同化宿主沉淀的真实对白证据池
+  // 同化宿主实时对白证据池
   try {
     const rawEvidence = localStorage.getItem(STORAGE_KEYS.EVIDENCE_CACHE);
     if (rawEvidence) {
@@ -126,7 +146,7 @@ function loadMemoriesFromStorage() {
               timestamp: evi.timestamp || Date.now(),
               source: evi.source || '私聊交互',
               rawQuote: evi.rawQuote || evi.text || '',
-              embedding: null, // 预留高维向量缓存
+              embedding: null,
             });
           }
         });
@@ -148,11 +168,8 @@ function saveMemoriesToStorage() {
   }
 }
 
-/* ================= 2. 向量嵌入与 Reranker 检索中枢 ================= */
+/* ================= 2. 向量嵌入与 Reranker 检索管线 ================= */
 
-/**
- * 远程调用 OpenAI 兼容规范生成文本 Embedding
- */
 async function fetchEmbedding(text) {
   if (!state.config.apiKey || !state.config.apiUrl || !state.config.embedModel) {
     throw new Error('未配置 API 密钥或向量模型');
@@ -180,12 +197,9 @@ async function fetchEmbedding(text) {
   if (data.data && data.data[0] && data.data[0].embedding) {
     return data.data[0].embedding;
   }
-  throw new Error('向量返回格式缺失 embedding 字段');
+  throw new Error('返回格式缺失 embedding');
 }
 
-/**
- * 计算余弦相似度
- */
 function cosineSimilarity(vecA, vecB) {
   if (!vecA || !vecB || vecA.length !== vecB.length) return 0;
   let dot = 0, normA = 0, normB = 0;
@@ -198,9 +212,6 @@ function cosineSimilarity(vecA, vecB) {
   return dot / (Math.sqrt(normA) * Math.sqrt(normB));
 }
 
-/**
- * 远程 Reranker 重排序调用
- */
 async function rerankMemories(query, candidates) {
   if (!state.config.rerankModel || !state.config.apiKey || candidates.length <= 1) {
     return candidates;
@@ -223,7 +234,7 @@ async function rerankMemories(query, candidates) {
       }),
     });
 
-    if (!response.ok) return candidates; // 降级返回余弦初筛结果
+    if (!response.ok) return candidates;
 
     const resData = await response.json();
     if (resData.results && Array.isArray(resData.results)) {
@@ -242,28 +253,22 @@ async function rerankMemories(query, candidates) {
   return candidates;
 }
 
-/**
- * 追忆检索（自动分流：向量+重排 or 本地分词加权）
- */
 async function executeRecall(query) {
   const q = query.trim();
   let baseCandidates = state.memories.slice();
 
-  // 1. 角色筛选胶囊门禁
   if (state.activeFilter !== 'all') {
     baseCandidates = baseCandidates.filter((m) => m.npcName === state.activeFilter);
   }
 
   if (!q) return baseCandidates;
 
-  // 2. 如果开启向量检索且具备 Key
   if (state.config.vectorEnabled && state.config.apiKey) {
     const feedbackEl = document.getElementById('search-feedback');
     if (feedbackEl) feedbackEl.hidden = false;
 
     try {
       const qVec = await fetchEmbedding(q);
-      // 计算每个记忆与检索词的向量相似度
       for (const m of baseCandidates) {
         if (!m.embedding) {
           try {
@@ -275,21 +280,18 @@ async function executeRecall(query) {
         m._score = m.embedding ? cosineSimilarity(qVec, m.embedding) : 0;
       }
 
-      // 按余弦相似度粗筛
       baseCandidates.sort((a, b) => (b._score || 0) - (a._score || 0));
       const topCandidates = baseCandidates.slice(0, 10);
-
-      // 调用 Reranker 重排序二次精排
       const reranked = await rerankMemories(q, topCandidates);
       if (feedbackEl) feedbackEl.hidden = true;
       return reranked;
     } catch (err) {
-      console.warn('[Rememori] 向量检索异常，优雅降级为关键词加权:', err);
+      console.warn('[Rememori] 向量检索降级:', err);
       if (feedbackEl) feedbackEl.hidden = true;
     }
   }
 
-  // 3. 本地关键词混合权重计算（降级方案）
+  // 降级：本地关键词加权
   const qLower = q.toLowerCase();
   const qTokens = qLower.split(/\s+/).filter(Boolean);
 
@@ -343,15 +345,11 @@ function filterByRoleOnly(list) {
   return list.filter((m) => m.npcName === state.activeFilter);
 }
 
-/**
- * 渲染角色联系人胶囊条
- */
 function renderFilterCapsules() {
   const container = document.getElementById('filter-capsules');
   const ingestSelect = document.getElementById('ingest-npc-select');
   if (!container) return;
 
-  // 聚合所有角色：包括宿主 NPC 池与记忆中已存在的 NPC
   const npcKeys = new Set(Object.keys(state.npcs));
   state.memories.forEach((m) => {
     if (m.npcName) npcKeys.add(m.npcName);
@@ -382,9 +380,6 @@ function renderFilterCapsules() {
   });
 }
 
-/**
- * 渲染记忆卡片流
- */
 async function renderMemoryList() {
   const listEl = document.getElementById('memory-list');
   const emptyEl = document.getElementById('empty-state');
@@ -456,7 +451,99 @@ async function renderMemoryList() {
   });
 }
 
-/* ================= 4. 微信质感弹窗交互 ================= */
+/* ================= 4. 模型单选即时过滤弹窗 ================= */
+
+function openModelPicker(targetType) {
+  state.currentPickerTarget = targetType;
+  const modal = document.getElementById('model-picker-modal');
+  const titleEl = document.getElementById('model-picker-title');
+  const searchInput = document.getElementById('picker-search-input');
+
+  if (!modal) return;
+  titleEl.textContent = targetType === 'embed' ? '选择 Embedding 向量模型' : '选择 Reranker 重排序模型';
+  if (searchInput) searchInput.value = '';
+
+  renderPickerList('');
+  modal.hidden = false;
+  if (searchInput) setTimeout(() => searchInput.focus(), 80);
+}
+
+function renderPickerList(filterKeyword) {
+  const container = document.getElementById('model-options-list');
+  if (!container) return;
+
+  const currentVal = state.currentPickerTarget === 'embed'
+    ? document.getElementById('cfg-embed-model').value.trim()
+    : document.getElementById('cfg-rerank-model').value.trim();
+
+  const kw = filterKeyword.toLowerCase().trim();
+  const filtered = state.cachedRemoteModels.filter((m) => !kw || m.toLowerCase().includes(kw));
+
+  if (filtered.length === 0) {
+    container.innerHTML = '<div style="padding: 24px; text-align: center; color: #999; font-size: 13px;">未找到匹配的模型</div>';
+    return;
+  }
+
+  container.innerHTML = filtered.map((m) => {
+    const isSelected = m === currentVal;
+    let tag = '';
+    if (m.toLowerCase().includes('rerank')) tag = '<span class="model-option-tag">重排</span>';
+    else if (m.toLowerCase().includes('embed') || m.toLowerCase().includes('bge')) tag = '<span class="model-option-tag">向量</span>';
+
+    return `
+      <div class="model-option-item ${isSelected ? 'active' : ''}" data-model="${escapeHtml(m)}">
+        <span>${escapeHtml(m)}</span>
+        ${tag}
+      </div>
+    `;
+  }).join('');
+
+  container.querySelectorAll('.model-option-item').forEach((item) => {
+    item.addEventListener('click', () => {
+      const selected = item.dataset.model;
+      if (state.currentPickerTarget === 'embed') {
+        document.getElementById('cfg-embed-model').value = selected;
+      } else {
+        document.getElementById('cfg-rerank-model').value = selected;
+      }
+      document.getElementById('model-picker-modal').hidden = true;
+      showToast(`已选择 ${selected}`);
+    });
+  });
+}
+
+async function fetchRemoteModelsAndOpen(targetType) {
+  const apiUrl = document.getElementById('cfg-api-url').value.trim();
+  const apiKey = document.getElementById('cfg-api-key').value.trim();
+
+  if (!apiKey) {
+    showToast('请先填写 API 密钥');
+    return;
+  }
+
+  showToast('正在拉取模型列表...');
+  try {
+    const endpoint = apiUrl.replace(/\/+$/, '') + '/models';
+    const res = await fetch(endpoint, {
+      headers: { Authorization: `Bearer ${apiKey}` },
+    });
+    if (!res.ok) throw new Error('拉取失败: ' + res.status);
+    const data = await res.json();
+    const models = (data.data || []).map((m) => m.id);
+
+    if (models.length === 0) {
+      showToast('未发现可用模型');
+      return;
+    }
+
+    state.cachedRemoteModels = models;
+    openModelPicker(targetType);
+  } catch (err) {
+    showToast('拉取失败，请检查 Base URL 或密钥');
+  }
+}
+
+/* ================= 5. 微信质感弹窗交互 ================= */
 
 function showToast(msg) {
   const toast = document.getElementById('toast-msg');
@@ -509,41 +596,10 @@ function openSettingsModal() {
   modal.hidden = false;
 }
 
-async function fetchAvailableModels() {
-  const apiUrl = document.getElementById('cfg-api-url').value.trim();
-  const apiKey = document.getElementById('cfg-api-key').value.trim();
-  if (!apiKey) {
-    showToast('请先填写 API 密钥');
-    return;
-  }
-
-  showToast('正在拉取模型列表...');
-  try {
-    const endpoint = apiUrl.replace(/\/+$/, '') + '/models';
-    const res = await fetch(endpoint, {
-      headers: { Authorization: `Bearer ${apiKey}` },
-    });
-    if (!res.ok) throw new Error('拉取失败: ' + res.status);
-    const data = await res.json();
-    const models = (data.data || []).map((m) => m.id);
-
-    // 智能筛选 embedding 和 rerank
-    const embedCandidate = models.find((m) => m.toLowerCase().includes('bge-m3') || m.toLowerCase().includes('embedding'));
-    const rerankCandidate = models.find((m) => m.toLowerCase().includes('rerank'));
-
-    if (embedCandidate) document.getElementById('cfg-embed-model').value = embedCandidate;
-    if (rerankCandidate) document.getElementById('cfg-rerank-model').value = rerankCandidate;
-
-    showToast(`拉取成功，发现 ${models.length} 个模型`);
-  } catch (err) {
-    showToast('拉取失败，请检查网络或密钥');
-  }
-}
-
-/* ================= 5. 事件绑定 ================= */
+/* ================= 6. 事件绑定 ================= */
 
 function bindDomEvents() {
-  // 顶栏返回桌面
+  // 返回桌面
   const btnBack = document.getElementById('btn-back');
   if (btnBack) {
     btnBack.addEventListener('click', () => {
@@ -557,16 +613,15 @@ function bindDomEvents() {
     });
   }
 
-  // 通用弹窗关闭机制
+  // 通用关闭
   document.querySelectorAll('[data-close]').forEach((el) => {
     el.addEventListener('click', () => {
-      const targetId = el.dataset.close;
-      const modal = document.getElementById(targetId);
+      const modal = document.getElementById(el.dataset.close);
       if (modal) modal.hidden = true;
     });
   });
 
-  // 微信确认框确认与取消
+  // 微信 Dialog
   const btnDialogCancel = document.getElementById('btn-dialog-cancel');
   const btnDialogConfirm = document.getElementById('btn-dialog-confirm');
   if (btnDialogCancel) {
@@ -582,13 +637,32 @@ function bindDomEvents() {
     });
   }
 
-  // 配置弹窗
+  // 配置中心弹窗与科普
   const btnOpenSettings = document.getElementById('btn-open-settings');
   const btnSaveSettings = document.getElementById('btn-save-settings');
-  const btnFetchModels = document.getElementById('btn-fetch-models');
-  if (btnOpenSettings) btnOpenSettings.addEventListener('click', openSettingsModal);
-  if (btnFetchModels) btnFetchModels.addEventListener('click', fetchAvailableModels);
+  const btnPickEmbed = document.getElementById('btn-pick-embed');
+  const btnPickRerank = document.getElementById('btn-pick-rerank');
+  const btnInfoEngine = document.getElementById('btn-info-engine');
+  const btnInfoEmbed = document.getElementById('btn-info-embed');
+  const btnInfoRerank = document.getElementById('btn-info-rerank');
 
+  if (btnOpenSettings) btnOpenSettings.addEventListener('click', openSettingsModal);
+  if (btnPickEmbed) btnPickEmbed.addEventListener('click', () => fetchRemoteModelsAndOpen('embed'));
+  if (btnPickRerank) btnPickRerank.addEventListener('click', () => fetchRemoteModelsAndOpen('rerank'));
+
+  if (btnInfoEngine) btnInfoEngine.addEventListener('click', () => { document.getElementById('engine-info-modal').hidden = false; });
+  if (btnInfoEmbed) btnInfoEmbed.addEventListener('click', () => { document.getElementById('embed-info-modal').hidden = false; });
+  if (btnInfoRerank) btnInfoRerank.addEventListener('click', () => { document.getElementById('rerank-info-modal').hidden = false; });
+
+  // 模型选择器搜索输入过滤
+  const pickerSearch = document.getElementById('picker-search-input');
+  if (pickerSearch) {
+    pickerSearch.addEventListener('input', (e) => {
+      renderPickerList(e.target.value);
+    });
+  }
+
+  // 保存设置
   if (btnSaveSettings) {
     btnSaveSettings.addEventListener('click', () => {
       state.config.apiUrl = document.getElementById('cfg-api-url').value.trim();
@@ -625,7 +699,7 @@ function bindDomEvents() {
     });
   }
 
-  // 搜索输入
+  // 追忆搜索
   const searchInput = document.getElementById('search-input');
   const clearBtn = document.getElementById('btn-clear-search');
   let searchTimer = null;
@@ -648,7 +722,7 @@ function bindDomEvents() {
     });
   }
 
-  // 收纳弹窗
+  // 手动收纳记忆
   const btnOpenIngest = document.getElementById('btn-open-ingest');
   const btnSaveIngest = document.getElementById('btn-save-ingest');
   const salienceRange = document.getElementById('ingest-salience');
@@ -701,9 +775,10 @@ function bindDomEvents() {
     });
   }
 
-  // 跨窗口沉淀监听
+  // 跨窗口同步监听
   window.addEventListener('message', (event) => {
-    if (event.data && event.data.type === 'DEPOSIT_REMEMORI_EVIDENCE') {
+    if (event.data && (event.data.type === 'DEPOSIT_REMEMORI_EVIDENCE' || event.data.type === 'NPCS_UPDATED')) {
+      loadHostNpcs();
       loadMemoriesFromStorage();
       renderFilterCapsules();
       renderMemoryList();
@@ -712,7 +787,7 @@ function bindDomEvents() {
   });
 }
 
-/* ================= 6. 微粒流动背景 ================= */
+/* ================= 7. 微粒流动背景 ================= */
 
 function initBackgroundCanvas() {
   const canvas = document.getElementById('field');
