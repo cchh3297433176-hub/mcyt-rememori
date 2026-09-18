@@ -1,298 +1,153 @@
 <!doctype html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>rememori — agent memory that runs anywhere JavaScript runs</title>
-  <meta name="description" content="Embedded memory engine for AI agents in pure TypeScript. Zero dependencies, zero servers, zero native bindings. Node, Bun, browser, edge." />
-  <meta property="og:title" content="rememori" />
-  <meta property="og:description" content="Agent memory that runs anywhere JavaScript runs. Pure TypeScript, zero dependencies, embedded." />
-  <meta property="og:type" content="website" />
-  <meta property="og:url" content="https://rememori.dev" />
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-100 -100 200 200'%3E%3Cg stroke='%23159957' stroke-width='14' stroke-linecap='round'%3E%3Cline x1='0' y1='0' x2='0' y2='-72'/%3E%3Cline x1='0' y1='0' x2='68.5' y2='-22.3'/%3E%3Cline x1='0' y1='0' x2='42.3' y2='58.3'/%3E%3Cline x1='0' y1='0' x2='-42.3' y2='58.3'/%3E%3Cline x1='0' y1='0' x2='-68.5' y2='-22.3'/%3E%3C/g%3E%3Cg fill='%23159957'%3E%3Ccircle cx='0' cy='0' r='22'/%3E%3Ccircle cx='0' cy='-72' r='18'/%3E%3Ccircle cx='68.5' cy='-22.3' r='18'/%3E%3Ccircle cx='42.3' cy='58.3' r='18'/%3E%3Ccircle cx='-42.3' cy='58.3' r='18'/%3E%3Ccircle cx='-68.5' cy='-22.3' r='18'/%3E%3C/g%3E%3C/svg%3E" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;700;800&display=swap" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <title>忆海 — 独立记忆中枢</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
-<canvas id="field" aria-hidden="true"></canvas>
+  <!-- 轻量动态记忆微粒背景画布 -->
+  <canvas id="field" aria-hidden="true"></canvas>
 
-<svg style="display:none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
-  <symbol id="stelo" viewBox="-100 -100 200 200">
-    <g stroke="currentColor" stroke-width="11" stroke-linecap="round">
-      <line x1="0" y1="0" x2="0" y2="-72"/>
-      <line x1="0" y1="0" x2="68.5" y2="-22.3"/>
-      <line x1="0" y1="0" x2="42.3" y2="58.3"/>
-      <line x1="0" y1="0" x2="-42.3" y2="58.3"/>
-      <line x1="0" y1="0" x2="-68.5" y2="-22.3"/>
-    </g>
-    <circle cx="0" cy="0" r="19"/>
-    <circle cx="0" cy="-72" r="15"/>
-    <circle cx="68.5" cy="-22.3" r="15"/>
-    <circle cx="42.3" cy="58.3" r="15"/>
-    <circle cx="-42.3" cy="58.3" r="15"/>
-    <circle cx="-68.5" cy="-22.3" r="15"/>
-  </symbol>
-</svg>
-
-<header class="top">
-  <a class="wordmark" href="/"><svg class="stelo" aria-hidden="true"><use href="#stelo"/></svg>rememori</a>
-  <nav aria-label="Main">
-    <a href="#demo">Live demo</a>
-    <a href="https://github.com/GiorgioDotcom/rememori">GitHub</a>
-    <a href="https://www.npmjs.com/package/rememori">npm</a>
-  </nav>
-</header>
-
-<main>
-
-  <!-- ================= HERO ================= -->
-  <section class="hero">
-    <svg class="hero-stelo" viewBox="-100 -100 200 200" aria-hidden="true">
-      <g fill="none" stroke="currentColor" stroke-width="1.2">
-        <line x1="0" y1="0" x2="0" y2="-72"/>
-        <line x1="0" y1="0" x2="68.5" y2="-22.3"/>
-        <line x1="0" y1="0" x2="42.3" y2="58.3"/>
-        <line x1="0" y1="0" x2="-42.3" y2="58.3"/>
-        <line x1="0" y1="0" x2="-68.5" y2="-22.3"/>
-        <circle cx="0" cy="0" r="19"/>
-        <circle cx="0" cy="-72" r="15"/>
-        <circle cx="68.5" cy="-22.3" r="15"/>
-        <circle cx="42.3" cy="58.3" r="15"/>
-        <circle cx="-42.3" cy="58.3" r="15"/>
-        <circle cx="-68.5" cy="-22.3" r="15"/>
-      </g>
-    </svg>
-    <div class="hero-inner">
-      <h1><span class="l1">Your agent forgets.</span> <span class="l2">Give it memory.</span></h1>
-      <p class="lede">rememori is an embedded memory engine in pure TypeScript.
-      Zero dependencies, zero servers, zero native bindings.
-      One file on disk — or IndexedDB in the browser.</p>
-      <div class="install" role="group" aria-label="Install command">
-        <code>npm install rememori</code>
-        <button type="button" data-copy="npm install rememori" aria-label="Copy install command">copy</button>
-      </div>
-      <p class="facts">v0.7.0 &nbsp;·&nbsp; 0 dependencies &nbsp;·&nbsp; ~8 kB gz core &nbsp;·&nbsp; MIT</p>
-      <p class="etymology">rememori — Esperanto for “to remember”. A language built to run anywhere. Same idea.</p>
-    </div>
-  </section>
-
-  <!-- ================= PROBLEM ================= -->
-  <section class="problem">
-    <div class="measure">
-      <h2>Every session ends the same way.</h2>
-      <p>The context window empties. The user's preferences, the decisions made,
-      the names mentioned — gone. Fixing it usually means a vector database, an
-      embedding pipeline and a retrieval service. All that, for a bot that needs
-      to remember fifty things.</p>
-      <p class="counter">Memory should be a primitive, not a platform.</p>
-    </div>
-  </section>
-
-  <!-- ================= THREE VERBS ================= -->
-  <section class="verbs">
-    <div class="verbs-grid">
-      <div class="verbs-copy">
-        <h2 class="trio">memori. <em>rememori.</em> forgesi.</h2>
-        <p class="trio-sub">Remember, recall, forget — three verbs. That’s the API.</p>
-        <p><strong>remember</strong> stores text with its embedding, tags and
-        extracted entities. <strong>recall</strong> ranks by similarity, shared
-        entities, use-feedback, importance and time decay.
-        <strong>forget</strong> deletes.</p>
-        <p>Since v0.7 the loop closes: <strong>reinforce</strong> hardens a
-        memory only on verifiable evidence it was used — self-report would
-        entrench mistakes — and <strong>demote</strong> gives used-and-wrong
-        memories a path down.</p>
-        <p class="aside">Bring any embedder: Ollama for local privacy, any
-        OpenAI-compatible endpoint, or your own function.
-        <span class="eo">The verbs are Esperanto, like the name.</span></p>
-      </div>
-      <pre class="code" aria-label="Code example"><code><span class="ln"><span class="kw">import</span> { Memory } <span class="kw">from</span> <span class="st">'rememori'</span>;</span>
-<span class="ln"><span class="kw">import</span> { ollama } <span class="kw">from</span> <span class="st">'rememori/embedders'</span>;</span>
-<span class="ln"> </span>
-<span class="ln"><span class="kw">const</span> mem = <span class="kw">await</span> Memory.<span class="fn">open</span>(<span class="st">'./agent.mem'</span>, {</span>
-<span class="ln">  embedder: <span class="fn">ollama</span>(<span class="st">'nomic-embed-text'</span>),</span>
-<span class="ln">});</span>
-<span class="ln"> </span>
-<span class="ln"><span class="kw">await</span> mem.<span class="fn">remember</span>(<span class="st">'User prefers dark mode'</span>, {</span>
-<span class="ln">  tags: [<span class="st">'prefs'</span>], importance: <span class="nu">0.8</span>,</span>
-<span class="ln">});</span>
-<span class="ln"> </span>
-<span class="ln"><span class="kw">const</span> hits = <span class="kw">await</span> mem.<span class="fn">recall</span>(<span class="st">'UI settings?'</span>, {</span>
-<span class="ln">  limit: <span class="nu">5</span>, halfLifeDays: <span class="nu">90</span>,</span>
-<span class="ln">});</span>
-<span class="ln"> </span>
-<span class="ln"><span class="kw">await</span> mem.<span class="fn">reinforceFromOutput</span>(hits, answer);</span>
-<span class="ln"><span class="kw">await</span> mem.<span class="fn">forget</span>(hits[<span class="nu">0</span>].id);</span></code></pre>
-    </div>
-  </section>
-
-  <!-- ================= LIVE DEMO ================= -->
-  <section class="demo" id="demo">
-    <div class="demo-head measure">
-      <h2>Don’t take our word for it.</h2>
-      <p>This section runs rememori in <em>your</em> browser. The embedding model
-      downloads once (~30&nbsp;MB, cached), then everything — embeddings, storage,
-      semantic recall — happens on your machine. Open
-      DevTools&nbsp;→&nbsp;Network and watch it stay silent.</p>
-    </div>
-    <div class="demo-panel">
-      <div class="demo-boot" id="demo-boot">
-        <button id="demo-load" type="button">Load the live demo</button>
-        <p class="demo-note">Downloads the MiniLM embedding model (~30 MB) from
-        Hugging Face, once. Your memories never leave this page.</p>
-      </div>
-      <div class="demo-ui" id="demo-ui" hidden>
-        <p class="demo-status" id="demo-status" role="status">Ready.</p>
-        <label class="demo-label" for="demo-remember">Remember something</label>
-        <input id="demo-remember" type="text" autocomplete="off"
-               placeholder="Staging deploys fail when the Redis cache is cold" />
-        <label class="demo-label" for="demo-recall">Ask your memory</label>
-        <input id="demo-recall" type="text" autocomplete="off"
-               placeholder="what do I know about deploys?" />
-        <ol class="demo-results" id="demo-results" aria-live="polite"></ol>
-      </div>
-    </div>
-    <p class="demo-note">Want this in your own agent? <a href="https://github.com/GiorgioDotcom/rememori/blob/main/examples/ollama-chat.mjs">Full local chat agent with Ollama — ~50 lines, runnable</a>.</p>
-  </section>
-
-  <!-- ================= MCP ================= -->
-  <section class="mcp">
-    <div class="measure">
-      <h2>Give your agent a memory. Now.</h2>
-      <p>rememori ships as an <a href="https://github.com/GiorgioDotcom/rememori/tree/main/mcp">MCP server</a>.
-      One command gives Claude Code — or Cursor, Windsurf, any MCP client —
-      persistent memory across sessions. Embeddings run locally via Ollama;
-      memories live in one file on your disk.</p>
-      <div class="install" role="group" aria-label="MCP install command">
-        <code>claude mcp add rememori -- npx -y rememori-mcp</code>
-        <button type="button" data-copy="claude mcp add rememori -- npx -y rememori-mcp" aria-label="Copy MCP command">copy</button>
-      </div>
-    </div>
-  </section>
-
-  <!-- ================= GRAPH / HOW RECALL WORKS ================= -->
-  <section class="graph">
-    <div class="graph-grid">
-      <figure class="graph-fig" id="graph-fig" aria-label="Diagram: memories link to entities; a query sharing an entity boosts a memory that plain similarity would miss.">
-        <svg viewBox="0 0 460 340" role="img">
-          <g class="g-links" fill="none" stroke-linecap="round">
-            <path class="g-link" d="M150 60 C 230 60, 250 90, 310 100" />
-            <path class="g-link" d="M150 150 C 230 150, 250 120, 310 100" />
-            <path class="g-link" d="M150 150 C 230 150, 250 200, 310 220" />
-            <path class="g-link" d="M150 240 C 230 240, 250 230, 310 220" />
-            <path class="g-link g-hot" d="M150 240 C 230 240, 250 230, 310 220" />
-          </g>
-          <g class="g-mem">
-            <g transform="translate(30,40)"><rect width="120" height="40" rx="6"/><text x="14" y="25">deploy notes</text></g>
-            <g transform="translate(30,130)"><rect width="120" height="40" rx="6"/><text x="14" y="25">api keys doc</text></g>
-            <g class="g-target" transform="translate(30,220)"><rect width="120" height="40" rx="6"/><text x="14" y="25">giorgio’s fix</text></g>
-          </g>
-          <g class="g-ent">
-            <g transform="translate(310,80)"><circle cx="0" cy="20" r="30"/><text x="0" y="25">AWS</text></g>
-            <g class="g-hot-ent" transform="translate(310,200)"><circle cx="0" cy="20" r="30"/><text x="0" y="25">Giorgio</text></g>
-          </g>
-          <g class="g-query" transform="translate(310,300)">
-            <text x="0" y="0">“any updates from Giorgio?”</text>
-          </g>
+  <!-- 顶部原生沉浸导航栏 -->
+  <header class="app-header">
+    <div class="header-inner">
+      <button type="button" class="back-btn" id="btn-back" aria-label="返回小手机桌面">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 18 9 12 15 6"></polyline>
         </svg>
-        <figcaption>A query that shares an entity lights up memories plain
-        similarity would miss.</figcaption>
-      </figure>
-      <div class="graph-copy">
-        <h2>Recall is more than similarity.</h2>
-        <p>Every memory links to the entities it mentions — a bipartite
-        knowledge graph, built automatically at write time. At recall,
-        memories sharing entities with the query get a bonus:</p>
-        <p class="formula"><code>(cosine + graph + feedback) × importance × decay</code></p>
-        <p>So when the words don't match but the <em>who</em> does, the right
-        memory still surfaces. Entity extraction is pluggable; the built-in
-        heuristic costs zero dependencies and zero API calls.</p>
+        <span>桌面</span>
+      </button>
+      <div class="app-title">
+        <span class="title-main">忆海</span>
+        <span class="title-sub">Rememori 记忆中枢</span>
+      </div>
+      <button type="button" class="action-btn" id="btn-open-ingest" aria-label="收纳新记忆">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+        <span>收纳</span>
+      </button>
+    </div>
+  </header>
+
+  <main class="app-main">
+    
+    <!-- 记忆池状态与概览卡片 -->
+    <section class="overview-card">
+      <div class="stat-grid">
+        <div class="stat-item">
+          <div class="stat-val" id="stat-total-memories">0</div>
+          <div class="stat-lbl">往昔记忆</div>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat-item">
+          <div class="stat-val" id="stat-active-evidence">0</div>
+          <div class="stat-lbl">真实凭据</div>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat-item">
+          <div class="stat-val" id="stat-index-state">就绪</div>
+          <div class="stat-lbl">引擎状态</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 追忆检索框 -->
+    <section class="search-section">
+      <div class="search-box">
+        <svg class="search-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <input id="search-input" type="search" autocomplete="off" placeholder="在记忆之海中追忆（人物、约定、细节）..." />
+        <button type="button" id="btn-clear-search" class="clear-btn" aria-label="清空搜索" hidden>×</button>
+      </div>
+    </section>
+
+    <!-- 角色与身份筛选胶囊条 -->
+    <section class="filter-section">
+      <div class="filter-capsules" id="filter-capsules">
+        <button type="button" class="capsule active" data-filter="all">全量记忆</button>
+        <button type="button" class="capsule" data-filter="main">主播大号</button>
+        <button type="button" class="capsule" data-filter="alt">小号轨迹</button>
+        <!-- 动态由脚本装配角色标签 -->
+      </div>
+    </section>
+
+    <!-- 记忆列表 -->
+    <section class="memory-stream-section">
+      <div class="section-meta">
+        <span class="meta-title" id="stream-meta-title">记忆列表</span>
+        <span class="meta-count" id="stream-meta-count">共 0 条</span>
+      </div>
+
+      <div class="memory-list" id="memory-list">
+        <!-- 默认空状态 -->
+        <div class="empty-state" id="empty-state">
+          <div class="empty-icon">🌱</div>
+          <div class="empty-title">暂无相关往昔记忆</div>
+          <div class="empty-desc">聊天中的重要互动与约定会自动沉淀至此，你也可以点击右上角手动收纳。</div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- 浮层弹窗：真实凭据（证据链）回溯 -->
+  <div class="rem-modal-mask" id="evidence-modal" hidden>
+    <div class="rem-modal-box">
+      <div class="rem-modal-head">
+        <div class="rem-modal-title">真实凭据回溯</div>
+        <button type="button" class="rem-modal-close" id="btn-close-evidence">×</button>
+      </div>
+      <div class="rem-modal-body" id="evidence-modal-body">
+        <div class="evidence-origin-badge" id="evidence-origin-badge">对话来源</div>
+        <div class="evidence-quote-box" id="evidence-quote-box"></div>
+        <div class="evidence-meta-row">
+          <span class="lbl">记录时刻</span>
+          <span class="val" id="evidence-time-val">-</span>
+        </div>
+        <div class="evidence-meta-row">
+          <span class="lbl">关联角色</span>
+          <span class="val" id="evidence-npc-val">-</span>
+        </div>
+      </div>
+      <div class="rem-modal-foot">
+        <button type="button" class="rem-btn primary" id="btn-confirm-evidence">了解</button>
       </div>
     </div>
-  </section>
+  </div>
 
-  <!-- ================= RUNS ANYWHERE ================= -->
-  <section class="anywhere">
-    <h2 class="measure">If it runs JavaScript,<br>it remembers.</h2>
-    <ul class="runtime-list">
-      <li><b>Node ≥ 18</b><span>append-only file, one <code>npm i</code></span></li>
-      <li><b>Bun</b><span>same file format, same API</span></li>
-      <li><b>Browser</b><span>IndexedDB via <code>idb://</code> paths</span></li>
-      <li><b>Edge workers</b><span>bring a KV adapter — it's one interface</span></li>
-      <li><b>Electron</b><span>no rebuild, ever</span></li>
-    </ul>
-    <p class="anywhere-note measure">Native-binding memory engines compile per
-    platform and stop at the browser's edge. Pure TypeScript ships everywhere
-    the language does — this very page is the existence proof.</p>
-  </section>
+  <!-- 浮层弹窗：手动收纳记忆 -->
+  <div class="rem-modal-mask" id="ingest-modal" hidden>
+    <div class="rem-modal-box">
+      <div class="rem-modal-head">
+        <div class="rem-modal-title">收纳往昔记忆</div>
+        <button type="button" class="rem-modal-close" id="btn-close-ingest">×</button>
+      </div>
+      <div class="rem-modal-body">
+        <label class="form-label" for="ingest-text">记忆内容描述</label>
+        <textarea id="ingest-text" class="form-textarea" rows="3" placeholder="记录一句深刻的约定、偏好或事实..."></textarea>
 
-  <!-- ================= USE CASES ================= -->
-  <section class="cases">
-    <h2 class="measure">What would you build?</h2>
-    <div class="cases-grid">
-      <div class="case">
-        <h3>A support bot that remembers the customer</h3>
-        <p>Last ticket, preferred tone, the promise a colleague made two weeks
-        ago. <code>remember()</code> every message, <code>recall()</code> before
-        replying. Telegram, Discord, Slack — three lines each.</p>
+        <label class="form-label" for="ingest-tags">关联标签（空格分隔）</label>
+        <input id="ingest-tags" type="text" class="form-input" placeholder="例如: 约定 喜好 直播" />
+
+        <div class="form-row">
+          <label class="form-label" for="ingest-salience">深刻度: <span id="salience-val-text">0.8</span></label>
+          <input id="ingest-salience" type="range" min="0.1" max="1.0" step="0.1" value="0.8" class="form-range" />
+        </div>
       </div>
-      <div class="case">
-        <h3>A coding agent with cross-session memory</h3>
-        <p>Decisions, conventions, “we already tried that”. One
-        <code>.mem</code> file next to the repo, versionable and greppable.</p>
-      </div>
-      <div class="case">
-        <h3>A local-first app with semantic search</h3>
-        <p>Electron or Tauri note-taking, mail, research tools: recall by
-        meaning without shipping your users' data to a server.</p>
-      </div>
-      <div class="case">
-        <h3>Assistants under compliance</h3>
-        <p>Legal, health, finance. Memory that provably never leaves the
-        device: IndexedDB storage plus local embeddings, auditable in the
-        Network tab.</p>
-      </div>
-      <div class="case">
-        <h3>A home-automation brain on a Raspberry Pi</h3>
-        <p>“Boiler serviced in March, technician was Rossi.” Nobody wants to
-        run Postgres on a Pi.</p>
-      </div>
-      <div class="case">
-        <h3>NPCs that hold a grudge</h3>
-        <p>Game characters that remember the player across saves — in-process,
-        inside the game loop, zero infrastructure.</p>
+      <div class="rem-modal-foot btn-group">
+        <button type="button" class="rem-btn cancel" id="btn-cancel-ingest">取消</button>
+        <button type="button" class="rem-btn primary" id="btn-save-ingest">确认收纳</button>
       </div>
     </div>
-  </section>
+  </div>
 
-  <!-- ================= HONESTY ================= -->
-  <section class="notfor">
-    <div class="measure">
-      <h2>What rememori is not.</h2>
-      <p>Not a multi-user server. Not a cloud. Not a document-ingestion
-      platform. If you need those, <a href="https://github.com/topoteretes/cognee">Cognee</a>
-      and <a href="https://github.com/mem0ai/mem0">Mem0</a> are good at them.
-      rememori is for when you want memory <em>inside your process</em>, in five
-      minutes, with nothing to operate.</p>
-    </div>
-  </section>
-
-</main>
-
-<footer class="foot">
-  <p class="foot-brand"><svg class="stelo" aria-hidden="true"><use href="#stelo"/></svg>rememori</p>
-  <nav aria-label="Footer">
-    <a href="https://github.com/GiorgioDotcom/rememori">GitHub</a>
-    <a href="https://www.npmjs.com/package/rememori">npm</a>
-    <a href="https://github.com/GiorgioDotcom/rememori/blob/main/LICENSE">MIT license</a>
-  </nav>
-  <p class="foot-note">This site is static HTML, CSS and one small script.
-  No framework, no tracker, no cookies. View source — it’s the whole point.
-  <span class="eo">La verda stelo — the green star — is the symbol of Esperanto.</span></p>
-</footer>
-
-<script type="module" src="main.js"></script>
+  <script type="module" src="main.js"></script>
 </body>
 </html>
