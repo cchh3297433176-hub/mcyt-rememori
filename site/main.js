@@ -6,6 +6,7 @@
  * - 监听 DELETE_NPC_MEMORIES 级联彻底删除角色全部记忆
  * - OpenAI 兼容向量检索 + Reranker 重排序管线，支持严格的角色专属记忆隔离检索
  * - 微信原生居中模型即时过滤弹窗（彻底消除原生 select）
+ * - 🌟 双向沙盒通信秒退协议：杜绝页面重载闪白与 history 栈死锁白屏
  */
 
 import { MemorySummarizer } from './summarizer.js';
@@ -141,7 +142,6 @@ function loadMemoriesFromStorage() {
   list = list.filter((m) => {
     if (!m) return false;
     if (m.id === 'mem_init_1' || m.id === 'mem_init_2') return false;
-    // 过滤掉旧版遗留的单条碎片对白，只保留真正的事实小结与手动记录
     if (m.source === '私聊交互' && (!m.tags || !m.tags.includes('客观事实'))) return false;
     return true;
   });
@@ -707,13 +707,30 @@ function openSettingsModal() {
 /* ================= 6. 事件绑定 ================= */
 
 function bindDomEvents() {
-  // 返回桌面
+  // 🌟 返回桌面（双向安全协议：优先通知宿主收起沙盒，绝不重载页面防白屏与历史栈死锁）
   const btnBack = document.getElementById('btn-back');
   if (btnBack) {
     btnBack.addEventListener('click', () => {
-      if (window.parent && window.parent !== window) {
-        window.parent.postMessage({ type: 'closeApp', appId: 'rememori' }, '*');
-      } else if (window.history.length > 1) {
+      try {
+        sessionStorage.setItem('mcyt_skip_lock_screen', 'true');
+        sessionStorage.setItem('mcyt_return_desktop_page', '0');
+      } catch (_) {}
+
+      // 1. 优先检测当前是否运行在宿主小手机沙盒内
+      const isInsideHost = (window.parent && window.parent !== window);
+      if (isInsideHost) {
+        try {
+          window.parent.postMessage('CLOSE_SANDBOX', '*');
+          window.parent.postMessage({ type: 'CLOSE_SANDBOX', action: 'closeSandbox', appId: 'rememori' }, '*');
+          if (typeof window.parent.closeInAppSandbox === 'function') {
+            window.parent.closeInAppSandbox();
+          }
+          return; // 立即阻断后续执行，绝对不调用 history.back 或 location.href
+        } catch (_) {}
+      }
+
+      // 2. 独立浏览器环境降级
+      if (window.history.length > 1) {
         window.history.back();
       } else {
         window.location.href = '../index.html';
