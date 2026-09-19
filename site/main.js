@@ -1,18 +1,18 @@
 /**
  * 忆海 (Rememori) 独立记忆中枢前端驱动核心
  * - 聚合小手机内存对象 G.npcs 与独立持久化 CUSTOM_NPCS_BACKUP_KEY（全面支持自建与导入角色）
- * - 贯通私聊对白与总结事实缓存（mcyt_rememori_cache_v1）双向同化
- * - 接入 MemorySummarizer：支持后台独立低价模型静默总结与第三人称客观具名提炼
- * - OpenAI 兼容向量检索 + Reranker 重排序管线
+ * - 彻底切断逐条碎片口水话对白全量转记忆的旧通道，只保留高质量长效客观事实小结
+ * - 接入 MemorySummarizer：支持后台独立低价模型静默总结与第三人称客观具名提炼（附带时间跨度）
+ * - 监听 DELETE_NPC_MEMORIES 级联彻底删除角色全部记忆
+ * - OpenAI 兼容向量检索 + Reranker 重排序管线，支持严格的角色专属记忆隔离检索
  * - 微信原生居中模型即时过滤弹窗（彻底消除原生 select）
- * - 硅基流动邀请码与模型梯队科普弹窗
  */
 
 import { MemorySummarizer } from './summarizer.js';
 
 const STORAGE_KEYS = {
   HOST_AUTOSAVE: 'mcyt_autosave',
-  HOST_CUSTOM_NPCS: 'mcyt_wechat_custom_npcs', // 2026-09修复：必须与 chat-common.js 里 CUSTOM_NPCS_BACKUP_KEY 的实际值保持一致，之前两边key名不一致导致自建角色永远读不到
+  HOST_CUSTOM_NPCS: 'mcyt_wechat_custom_npcs',
   EVIDENCE_CACHE: 'mcyt_rememori_cache_v1',
   LOCAL_MEMORIES: 'mcyt_rememori_memories_store',
   VECTOR_CONFIG: 'mcyt_rememori_vector_config',
@@ -32,8 +32,8 @@ const state = {
     vectorEnabled: false,
   },
   dialogResolver: null,
-  cachedRemoteModels: [], // 缓存拉取到的模型列表
-  currentPickerTarget: 'embed', // 'embed' | 'rerank' | 'summary'
+  cachedRemoteModels: [],
+  currentPickerTarget: 'embed',
 };
 
 let summarizerInstance = null;
@@ -77,19 +77,17 @@ function saveConfig() {
 }
 
 /**
- * 完整聚合小手机内存对象、自建联系人独立持久化槽与自动存档（全面支持自建角色）
+ * 完整聚合小手机内存对象、自建联系人独立持久化槽与自动存档
  */
 function loadHostNpcs() {
   const mergedNpcs = {};
 
-  // 1. 优先读取宿主顶层内存对象 window.parent.G.npcs
   try {
     if (window.parent && window.parent.G && typeof window.parent.G.npcs === 'object' && window.parent.G.npcs !== null) {
       Object.assign(mergedNpcs, window.parent.G.npcs);
     }
   } catch (_) {}
 
-  // 2. 读取自建联系人独立备份 (CUSTOM_NPCS_BACKUP_KEY: mcyt_custom_npcs_backup)
   try {
     const rawCustom = localStorage.getItem(STORAGE_KEYS.HOST_CUSTOM_NPCS);
     if (rawCustom) {
@@ -109,7 +107,6 @@ function loadHostNpcs() {
     console.warn('[Rememori] 读取自建联系人备份失败:', e);
   }
 
-  // 3. 读取底层自动存档中的 npcs 补充兜底
   try {
     const rawAutosave = localStorage.getItem(STORAGE_KEYS.HOST_AUTOSAVE);
     if (rawAutosave) {
@@ -122,7 +119,6 @@ function loadHostNpcs() {
     console.warn('[Rememori] 读取自动存档联系人失败:', e);
   }
 
-  // 4. 极端空值兜底
   if (Object.keys(mergedNpcs).length === 0) {
     mergedNpcs.Dream = { id: 'Dream', name: 'Dream', remark: 'Dream' };
     mergedNpcs.George = { id: 'George', name: 'George', remark: 'George' };
@@ -141,68 +137,14 @@ function loadMemoriesFromStorage() {
     console.error('[Rememori] 读取本地记忆失败:', e);
   }
 
-  // 清除旧测试假数据
-  list = list.filter((m) => m.id !== 'mem_init_1' && m.id !== 'mem_init_2');
-
-  // 同化宿主实时对白与第三人称总结事实证据池 (mcyt_rememori_cache_v1)
-  try {
-    const rawEvidence = localStorage.getItem(STORAGE_KEYS.EVIDENCE_CACHE);
-    if (rawEvidence) {
-      const parsedEvidence = JSON.parse(rawEvidence);
-
-      // 兼容 A: 对象形态字典 { "main_npcId": [ { content, time, timestamp } ] }
-      if (typeof parsedEvidence === 'object' && !Array.isArray(parsedEvidence) && parsedEvidence !== null) {
-        Object.entries(parsedEvidence).forEach(([key, items]) => {
-          if (!Array.isArray(items)) return;
-          let targetNpcKey = key.includes('_') ? key.substring(key.indexOf('_') + 1) : key;
-          const foundNpc = state.npcs[targetNpcKey] || Object.values(state.npcs).find((n) => n.id === targetNpcKey || n.name === targetNpcKey);
-          const targetDisplayName = foundNpc ? (foundNpc.remark || foundNpc.name) : targetNpcKey;
-
-          items.forEach((item) => {
-            const rawContent = item.content || '';
-            const exists = list.some((m) => m.rawQuote === rawContent && Math.abs((m.timestamp || 0) - (item.timestamp || 0)) < 3000);
-            if (!exists && rawContent.length >= 5) {
-              const isSummary = rawContent.includes('[记忆总结事实]');
-              list.unshift({
-                id: 'mem_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
-                npcName: targetDisplayName,
-                text: isSummary ? rawContent.replace('[记忆总结事实]:\n', '').trim() : rawContent,
-                tags: isSummary ? ['核心事实', '长效记忆'] : ['对白留底'],
-                salience: isSummary ? 0.95 : 0.8,
-                timestamp: item.timestamp || Date.now(),
-                source: isSummary ? '智能事实凝练' : '私聊交互',
-                rawQuote: rawContent,
-                embedding: null,
-              });
-            }
-          });
-        });
-      }
-      // 兼容 B: 数组形态 [ { id, npcName, text... } ]
-      else if (Array.isArray(parsedEvidence)) {
-        parsedEvidence.forEach((evi) => {
-          const exists = list.some(
-            (m) => m.evidenceId === evi.id || (m.text === evi.text && m.timestamp === evi.timestamp)
-          );
-          if (!exists) {
-            list.unshift({
-              id: 'mem_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
-              npcName: evi.npcName || '通用联系人',
-              text: evi.text || evi.summary || '对白记忆',
-              tags: Array.isArray(evi.tags) && evi.tags.length ? evi.tags : ['对白留底'],
-              salience: Number(evi.salience || 0.8),
-              timestamp: evi.timestamp || Date.now(),
-              source: evi.source || '私聊交互',
-              rawQuote: evi.rawQuote || evi.text || '',
-              embedding: null,
-            });
-          }
-        });
-      }
-    }
-  } catch (e) {
-    console.warn('[Rememori] 同化对白证据失败:', e);
-  }
+  // 清洗旧测试假数据与残留的非结构化逐条对白卡片
+  list = list.filter((m) => {
+    if (!m) return false;
+    if (m.id === 'mem_init_1' || m.id === 'mem_init_2') return false;
+    // 过滤掉旧版遗留的单条碎片对白，只保留真正的事实小结与手动记录
+    if (m.source === '私聊交互' && (!m.tags || !m.tags.includes('客观事实'))) return false;
+    return true;
+  });
 
   state.memories = list;
   saveMemoriesToStorage();
@@ -216,22 +158,70 @@ function saveMemoriesToStorage() {
   }
 }
 
-// 供 Summarizer 成功后静默调用的方法
-function ingestSummaryFacts(npcName, factsText, originalDialogue) {
+// 供 Summarizer 提炼成功后调用的入库方法
+function ingestSummaryFacts(npcName, factsText, originalDialogue, extra = {}) {
+  const timeSpan = extra.timeSpan || '';
+  const npcId = extra.npcId || '';
+  const tags = ['客观事实', '长效记忆'];
+  if (timeSpan) tags.push(timeSpan);
+
   const newMem = {
     id: 'mem_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
-    npcName,
+    npcId: npcId,
+    npcName: npcName,
     text: factsText,
-    tags: ['客观事实', '长效记忆'],
+    timeSpan: timeSpan,
+    tags: tags,
     salience: 0.95,
     timestamp: Date.now(),
-    source: '智能后台总结',
-    rawQuote: originalDialogue ? originalDialogue.slice(0, 300) : factsText,
+    source: '智能事实凝练',
+    rawQuote: originalDialogue ? originalDialogue.slice(0, 500) : factsText,
     embedding: null,
   };
 
   state.memories.unshift(newMem);
   saveMemoriesToStorage();
+  renderMemoryList();
+  updateOverviewStats();
+}
+
+/**
+ * 级联彻底删除指定角色在忆海中的所有记忆与缓存
+ */
+function deleteNpcMemories(npcId, npcName) {
+  if (!npcId && !npcName) return;
+
+  state.memories = state.memories.filter((m) => {
+    if (npcId && m.npcId === npcId) return false;
+    if (npcName && m.npcName === npcName) return false;
+    if (npcId && m.npcName === npcId) return false;
+    return true;
+  });
+
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.EVIDENCE_CACHE);
+    if (raw) {
+      const store = JSON.parse(raw);
+      let changed = false;
+      Object.keys(store).forEach((k) => {
+        if (k.endsWith(`_${npcId}`) || k === npcId || (npcName && k.endsWith(`_${npcName}`))) {
+          delete store[k];
+          changed = true;
+        }
+      });
+      if (changed) {
+        localStorage.setItem(STORAGE_KEYS.EVIDENCE_CACHE, JSON.stringify(store));
+      }
+    }
+  } catch (_) {}
+
+  if (state.activeFilter === npcName || state.activeFilter === npcId) {
+    state.activeFilter = 'all';
+  }
+
+  saveMemoriesToStorage();
+  loadHostNpcs();
+  renderFilterCapsules();
   renderMemoryList();
   updateOverviewStats();
 }
@@ -321,12 +311,14 @@ async function rerankMemories(query, candidates) {
   return candidates;
 }
 
-async function executeRecall(query) {
+// 执行召回，支持传入角色专属过滤，确保单人私聊严格隔离
+async function executeRecall(query, roleFilterOverride = null) {
   const q = query.trim();
   let baseCandidates = state.memories.slice();
+  const effectiveFilter = roleFilterOverride || state.activeFilter;
 
-  if (state.activeFilter !== 'all') {
-    baseCandidates = baseCandidates.filter((m) => m.npcName === state.activeFilter);
+  if (effectiveFilter !== 'all') {
+    baseCandidates = baseCandidates.filter((m) => m.npcName === effectiveFilter || m.npcId === effectiveFilter);
   }
 
   if (!q) return baseCandidates;
@@ -410,7 +402,7 @@ function updateHeaderEngineState() {
 
 function filterByRoleOnly(list) {
   if (state.activeFilter === 'all') return list;
-  return list.filter((m) => m.npcName === state.activeFilter);
+  return list.filter((m) => m.npcName === state.activeFilter || m.npcId === state.activeFilter);
 }
 
 function renderFilterCapsules() {
@@ -603,13 +595,6 @@ async function fetchRemoteModelsAndOpen(targetType) {
   if (targetType === 'summary') {
     const useHost = document.getElementById('cfg-summary-use-host').checked;
     if (useHost) {
-      // 2026-09修复：之前这里什么都不做，导致勾选"继承小手机主设置API"时
-      // 实际仍然沿用上面向量API的 apiUrl/apiKey（cfg-api-url/cfg-api-key），
-      // 而不是真正去读设置App保存的配置。这里补上真正的读取逻辑。
-      // 已用 settings-app.js 源码核实确认两处不一致：
-      // 1) 实际写入key是 'mc_yt_ai_config'（带下划线），不是 'mcyt_ai_config'；
-      // 2) Base URL字段名是 'baseUrl'，不是 'apiUrl'。
-      // 下面两个key、两个字段名都做了兼容读取。
       try {
         const hostRaw = localStorage.getItem('mc_yt_ai_config') || localStorage.getItem('mcyt_ai_config');
         if (hostRaw) {
@@ -704,7 +689,6 @@ function openSettingsModal() {
   document.getElementById('cfg-rerank-model').value = state.config.rerankModel || '';
   document.getElementById('cfg-enable-vector').checked = !!state.config.vectorEnabled;
 
-  // 装配总结模块配置
   if (summarizerInstance) {
     const sCfg = summarizerInstance.config;
     const useHostChk = document.getElementById('cfg-summary-use-host');
@@ -788,7 +772,6 @@ function bindDomEvents() {
   if (btnInfoEmbed) btnInfoEmbed.addEventListener('click', () => { document.getElementById('embed-info-modal').hidden = false; });
   if (btnInfoRerank) btnInfoRerank.addEventListener('click', () => { document.getElementById('rerank-info-modal').hidden = false; });
 
-  // 模型选择器搜索输入过滤
   const pickerSearch = document.getElementById('picker-search-input');
   if (pickerSearch) {
     pickerSearch.addEventListener('input', (e) => {
@@ -919,7 +902,7 @@ function bindDomEvents() {
     });
   }
 
-  // 跨窗口同步监听（含后台静默总结总线）
+  // 跨窗口总线监听
   window.addEventListener('message', (event) => {
     if (!event.data) return;
 
@@ -927,9 +910,10 @@ function bindDomEvents() {
       if (summarizerInstance) {
         summarizerInstance.enqueueTask(event.data);
       }
-    } else if (event.data.type === 'DEPOSIT_REMEMORI_EVIDENCE' || event.data.type === 'NPCS_UPDATED') {
+    } else if (event.data.type === 'DELETE_NPC_MEMORIES') {
+      deleteNpcMemories(event.data.npcId, event.data.npcName);
+    } else if (event.data.type === 'NPCS_UPDATED') {
       loadHostNpcs();
-      loadMemoriesFromStorage();
       renderFilterCapsules();
       renderMemoryList();
       updateOverviewStats();

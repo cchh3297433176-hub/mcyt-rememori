@@ -2,7 +2,8 @@
  * 忆海 (Rememori) - 静默后台记忆总结驱动器
  * - 读取独立配置的低价/专用总结模型
  * - 支持一键继承小手机宿主通用大模型 API
- * - 纯后台非阻塞排队总结，仅在报错时弹窗或轻量提示
+ * - 纯后台非阻塞排队总结，接收时间跨度参数并生成高质量长效事实
+ * - 仅在报错时弹窗或轻量提示
  */
 
 import { getPromptForScene } from './prompts/index.js';
@@ -52,11 +53,6 @@ export class MemorySummarizer {
     let hostKey = '';
     let hostModel = '';
     try {
-      // 2026-09修复：这里之前读的key/字段名跟settings-app.js实际写入的对不上，
-      // 导致继承主设置API这条路径实际上永远读不到任何东西，静默回退成空Key。
-      // 实际写入方(settings-app.js第1124/1515/1594行)用的key是 'mc_yt_ai_config'(带下划线)，
-      // 且Base URL字段名是 'baseUrl' 不是 'apiUrl'。这里两个key都兼容读一下，
-      // 字段名也两个都兼容取一下，降低以后再改动名字时又踩同样的坑的概率。
       const hostState = localStorage.getItem('mc_yt_ai_config') || localStorage.getItem('mcyt_ai_config');
       if (hostState) {
         const parsed = JSON.parse(hostState);
@@ -103,8 +99,16 @@ export class MemorySummarizer {
       throw new Error('未配置 API 密钥，请在忆海或系统设置中填写');
     }
 
-    const { scene = 'chat', dialogues = '', playerName = '玩家', npcName = '好友', npcId } = task;
-    const systemPrompt = getPromptForScene(scene, { playerName, npcName });
+    const {
+      scene = 'chat',
+      dialogues = '',
+      playerName = '玩家',
+      npcName = '好友',
+      npcId = '',
+      timeSpan = '',
+    } = task;
+
+    const systemPrompt = getPromptForScene(scene, { playerName, npcName, timeSpan, npcId });
 
     const endpoint = creds.apiUrl.replace(/\/+$/, '') + '/chat/completions';
     const response = await fetch(endpoint, {
@@ -132,19 +136,18 @@ export class MemorySummarizer {
     const resData = await response.json();
     let content = resData.choices?.[0]?.message?.content || '';
 
-    // 清洗思考链
+    // 清洗可能存在的思考链
     content = content.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
 
     if (content) {
-      // 静默存入忆海记忆中枢
+      // 成功提炼事实后，静默存入忆海记忆中枢
       if (this.app && typeof this.app.ingestSummaryFacts === 'function') {
-        this.app.ingestSummaryFacts(npcName, content, dialogues);
+        this.app.ingestSummaryFacts(npcName, content, dialogues, { npcId, timeSpan });
       }
     }
   }
 
   notifyError(msg) {
-    // 只有报错时才提醒
     if (this.app && typeof this.app.showWechatToast === 'function') {
       this.app.showWechatToast(msg, 'error');
     } else {
