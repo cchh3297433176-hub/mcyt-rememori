@@ -1,13 +1,10 @@
 /**
  * 忆海 (Rememori) 独立记忆中枢前端驱动核心
- * - 聚合小手机内存对象 G.npcs 与独立持久化 CUSTOM_NPCS_BACKUP_KEY（全面支持自建与导入角色）
- * - 🌟 微信小程序现代大头像一行双列微光网格与二级专属多维记忆殿堂
- * - 彻底切断逐条碎片口水话对白全量转记忆的旧通道，只保留高质量长效客观事实小结
- * - 接入 MemorySummarizer：支持后台独立低价模型静默总结与第三人称客观具名提炼（附带时间跨度）
- * - 监听 DELETE_NPC_MEMORIES 级联彻底删除角色全部记忆
- * - OpenAI 兼容向量检索 + Reranker 重排序管线，支持严格的角色专属记忆隔离检索
- * - 微信原生居中模型即时过滤弹窗（彻底消除原生 select）
- * - 🌟 双向沙盒通信秒退协议：杜绝页面重载闪白与 history 栈死锁白屏
+ * - 聚合小手机内存对象 G.npcs 与独立持久化 CUSTOM_NPCS_BACKUP_KEY
+ * - 微信小程序现代大头像一行双列微光网格与二级专属多维记忆殿堂
+ * - 🌟 结构化事实分类解析：自动识别 [生活习惯]、[约定事项]、[同伴印象]、[心境暗流]、[长效事实] 并分流归位
+ * - 接入 MemorySummarizer：支持后台独立低价模型静默总结与第三人称客观具名提炼
+ * - 严格的去 Emoji 素雅沉浸式微信 UI 质感与磨砂白提炼按钮交互
  */
 
 import { MemorySummarizer } from './summarizer.js';
@@ -23,10 +20,10 @@ const STORAGE_KEYS = {
 // 状态总线
 const state = {
   memories: [],
-  activeFilter: 'all', // 'all' | npcName
+  activeFilter: 'all',
   searchQuery: '',
-  npcs: {}, // 汇聚所有内置与自建 NPC
-  currentSelectedNpc: null, // 当前在二级记忆殿堂查看的角色
+  npcs: {},
+  currentSelectedNpc: null,
   config: {
     apiUrl: 'https://api.siliconflow.cn/v1',
     apiKey: '',
@@ -79,9 +76,6 @@ function saveConfig() {
   }
 }
 
-/**
- * 完整聚合小手机内存对象、自建联系人独立持久化槽与自动存档
- */
 function loadHostNpcs() {
   const mergedNpcs = {};
 
@@ -140,7 +134,6 @@ function loadMemoriesFromStorage() {
     console.error('[Rememori] 读取本地记忆失败:', e);
   }
 
-  // 清洗旧测试假数据与残留的非结构化逐条对白卡片
   list = list.filter((m) => {
     if (!m) return false;
     if (m.id === 'mem_init_1' || m.id === 'mem_init_2') return false;
@@ -160,37 +153,88 @@ function saveMemoriesToStorage() {
   }
 }
 
-// 供 Summarizer 提炼成功后调用的入库方法
+// 🌟 结构化事实智能切分与入库
 function ingestSummaryFacts(npcName, factsText, originalDialogue, extra = {}) {
   const timeSpan = extra.timeSpan || '';
   const npcId = extra.npcId || '';
-  const tags = ['客观事实', '长效记忆'];
-  if (timeSpan) tags.push(timeSpan);
 
-  const newMem = {
-    id: 'mem_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
-    npcId: npcId,
-    npcName: npcName,
-    text: factsText,
-    timeSpan: timeSpan,
-    tags: tags,
-    salience: 0.95,
-    timestamp: Date.now(),
-    source: '智能事实凝练',
-    rawQuote: originalDialogue ? originalDialogue.slice(0, 500) : factsText,
-    embedding: null,
-  };
+  // 针对大模型返回的结构化标签行做细化解析：[生活习惯]、[约定事项]、[同伴印象: xxx]、[心境暗流]、[长效事实]
+  const lines = factsText.split('\n').map(l => l.trim()).filter(Boolean);
+  let createdCount = 0;
 
-  state.memories.unshift(newMem);
+  for (const line of lines) {
+    let cleanText = line.replace(/^[-*•\s]+/, '').trim();
+    let category = '长效事实';
+    let tags = ['客观事实', '长效记忆'];
+    let peerName = '';
+
+    const tagMatch = cleanText.match(/^\[(生活习惯|约定事项|同伴印象(?::\s*[^\]]+)?|心境暗流|长效事实)\]\s*/i);
+    if (tagMatch) {
+      const rawTag = tagMatch[1];
+      cleanText = cleanText.slice(tagMatch[0].length).trim();
+      if (rawTag.startsWith('同伴印象')) {
+        category = '同伴印象';
+        const pMatch = rawTag.match(/同伴印象(?::\s*([^\]]+))/i);
+        if (pMatch) peerName = pMatch[1].trim();
+        tags.push('同伴印象');
+        if (peerName) tags.push(`同伴:${peerName}`);
+      } else {
+        category = rawTag;
+        tags.push(rawTag);
+      }
+    }
+
+    if (timeSpan) tags.push(timeSpan);
+    if (!cleanText) continue;
+
+    const newMem = {
+      id: 'mem_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+      npcId: npcId,
+      npcName: npcName,
+      category: category,
+      peerName: peerName,
+      text: cleanText,
+      timeSpan: timeSpan,
+      tags: tags,
+      salience: 0.95,
+      timestamp: Date.now(),
+      source: '智能事实凝练',
+      rawQuote: originalDialogue ? originalDialogue.slice(0, 500) : cleanText,
+      embedding: null,
+    };
+
+    state.memories.unshift(newMem);
+    createdCount++;
+  }
+
+  // 兜底：若没有匹配到任何独立行，直接整段作为长效事实入库
+  if (createdCount === 0 && factsText.trim()) {
+    state.memories.unshift({
+      id: 'mem_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+      npcId: npcId,
+      npcName: npcName,
+      category: '长效事实',
+      text: factsText.trim(),
+      timeSpan: timeSpan,
+      tags: ['客观事实', '长效记忆'],
+      salience: 0.95,
+      timestamp: Date.now(),
+      source: '智能事实凝练',
+      rawQuote: originalDialogue ? originalDialogue.slice(0, 500) : factsText,
+      embedding: null,
+    });
+  }
+
   saveMemoriesToStorage();
   renderDualGridNpcCards();
   renderMemoryList();
   updateOverviewStats();
+
+  if (state.currentSelectedNpc && (state.currentSelectedNpc.id === npcId || state.currentSelectedNpc.name === npcName)) {
+    openCharacterHall(state.currentSelectedNpc);
+  }
 }
 
-/**
- * 级联彻底删除指定角色在忆海中的所有记忆与缓存
- */
 function deleteNpcMemories(npcId, npcName) {
   if (!npcId && !npcName) return;
 
@@ -314,7 +358,6 @@ async function rerankMemories(query, candidates) {
   return candidates;
 }
 
-// 执行召回，支持传入角色专属过滤，确保单人私聊严格隔离
 async function executeRecall(query, roleFilterOverride = null) {
   const q = query.trim();
   let baseCandidates = state.memories.slice();
@@ -348,7 +391,6 @@ async function executeRecall(query, roleFilterOverride = null) {
     }
   }
 
-  // 降级：本地关键词加权
   const qLower = q.toLowerCase();
   const qTokens = qLower.split(/\s+/).filter(Boolean);
 
@@ -389,7 +431,6 @@ function updateHeaderEngineState() {
   }
 }
 
-// 🌟 渲染一行双列大头像卡片网格（致敬你截图的小程序风格）
 function renderDualGridNpcCards() {
   const gridContainer = document.getElementById('npcDualGridContainer');
   const ingestSelect = document.getElementById('ingest-npc-select');
@@ -440,7 +481,6 @@ function renderDualGridNpcCards() {
 
   if (ingestSelect) ingestSelect.innerHTML = selectHtml;
 
-  // 绑定点击进入二级专属记忆殿堂
   gridContainer.querySelectorAll('.npc-grid-card').forEach(card => {
     card.addEventListener('click', () => {
       const nid = card.dataset.npcid;
@@ -452,7 +492,7 @@ function renderDualGridNpcCards() {
   });
 }
 
-// 🌟 打开二级角色专属多维记忆殿堂
+// 🌟 打开二级角色专属多维记忆殿堂（支持生活作息、约定、同伴印象、心境与长效事实的分流展示）
 function openCharacterHall(npc) {
   state.currentSelectedNpc = npc;
   const hallView = document.getElementById('characterHallView');
@@ -466,46 +506,77 @@ function openCharacterHall(npc) {
   const avatarImg = document.getElementById('hallAvatarImg');
   if (avatarImg) avatarImg.src = npc.avatarUrl || npc.avatar || 'assets/icons/chat.png';
 
-  // 1. 心境与心声
-  const innerVoice = npc.latestInnerVoice;
-  const innerTime = npc.latestInnerVoiceTime;
-  const previewInner = document.getElementById('previewInnerState');
-  if (previewInner) {
-    if (innerVoice) {
-      previewInner.innerHTML = `<span style="color:#07c160;">[${innerTime || '近期'}]</span> “${escapeHtml(innerVoice)}”`;
-    } else {
-      previewInner.textContent = '暂无心境心声，在私聊中互动将自然沉淀。';
-    }
-  }
-
-  // 2. 上帝视角长效事实
   const relatedMems = state.memories.filter(m => m.npcName === displayName || m.npcId === npc.id || m.npcName === npc.name);
-  const countCore = document.getElementById('countCoreFacts');
-  const previewCore = document.getElementById('previewCoreFacts');
-  if (countCore) countCore.textContent = `${relatedMems.length} 条`;
-  if (previewCore) {
-    if (relatedMems.length > 0) {
-      const top3 = relatedMems.slice(0, 3).map(m => `• ${escapeHtml(m.text)}`).join('<br>');
-      previewCore.innerHTML = top3;
+
+  // 1. 生活作息与习惯偏好
+  const habitMems = relatedMems.filter(m => m.category === '生活习惯' || (m.tags && (m.tags.includes('生活习惯') || m.tags.includes('习惯') || m.tags.includes('偏好') || m.tags.includes('作息'))));
+  const countHabits = document.getElementById('countHabits');
+  const previewHabits = document.getElementById('previewHabits');
+  if (countHabits) countHabits.textContent = `${habitMems.length} 条`;
+  if (previewHabits) {
+    if (habitMems.length > 0) {
+      previewHabits.innerHTML = habitMems.map(m => `• ${escapeHtml(m.text)}`).join('<br>');
     } else {
-      previewCore.textContent = '暂无客观事实，满额对白将自动触发凝练。';
+      previewHabits.textContent = '暂无习惯记录，日常交流中将自然提炼。';
     }
   }
 
-  // 3. 约定与承诺清单
+  // 2. 彼此约定与承诺事项
   const countProm = document.getElementById('countPromises');
   const previewProm = document.getElementById('previewPromises');
-  const promiseMems = relatedMems.filter(m => (m.tags && (m.tags.includes('约定') || m.tags.includes('承诺'))));
+  const promiseMems = relatedMems.filter(m => m.category === '约定事项' || (m.tags && (m.tags.includes('约定事项') || m.tags.includes('约定') || m.tags.includes('承诺'))));
   if (countProm) countProm.textContent = `${promiseMems.length} 项`;
   if (previewProm) {
     if (promiseMems.length > 0) {
-      previewProm.innerHTML = promiseMems.map(m => `🎁 ${escapeHtml(m.text)}`).join('<br>');
+      previewProm.innerHTML = promiseMems.map(m => `• [待履约] ${escapeHtml(m.text)}`).join('<br>');
     } else {
       previewProm.textContent = '暂无待办约定。';
     }
   }
 
-  // 4. 群聊共通线索
+  // 3. 同伴印象与人际圈
+  const peerMems = relatedMems.filter(m => m.category === '同伴印象' || (m.tags && m.tags.some(t => t.startsWith('同伴:'))));
+  const countPeers = document.getElementById('countPeers');
+  const previewPeers = document.getElementById('previewPeers');
+  if (countPeers) countPeers.textContent = `${peerMems.length} 条`;
+  if (previewPeers) {
+    if (peerMems.length > 0) {
+      previewPeers.innerHTML = peerMems.map(m => `• ${m.peerName ? `对「${escapeHtml(m.peerName)}」: ` : ''}${escapeHtml(m.text)}`).join('<br>');
+    } else {
+      previewPeers.textContent = '暂无对其他角色的直观印象。';
+    }
+  }
+
+  // 4. 心境与内心暗流
+  const innerVoice = npc.latestInnerVoice;
+  const innerTime = npc.latestInnerVoiceTime;
+  const innerMems = relatedMems.filter(m => m.category === '心境暗流' || (m.tags && m.tags.includes('心境暗流')));
+  const previewInner = document.getElementById('previewInnerState');
+  if (previewInner) {
+    let innerHtml = '';
+    if (innerVoice) {
+      innerHtml += `<div style="margin-bottom:6px;"><span style="color:#07c160;font-size:11px;">[实时心声 · ${innerTime || '刚刚'}]</span> “${escapeHtml(innerVoice)}”</div>`;
+    }
+    if (innerMems.length > 0) {
+      innerHtml += innerMems.map(m => `• [心态变化] ${escapeHtml(m.text)}`).join('<br>');
+    }
+    previewInner.innerHTML = innerHtml || '暂无心境心声，在私聊中互动将自然沉淀。';
+  }
+
+  // 5. 上帝视角客观长效事实
+  const coreMems = relatedMems.filter(m => !m.category || m.category === '长效事实' || (!['生活习惯', '约定事项', '同伴印象', '心境暗流'].includes(m.category)));
+  const countCore = document.getElementById('countCoreFacts');
+  const previewCore = document.getElementById('previewCoreFacts');
+  if (countCore) countCore.textContent = `${coreMems.length} 条`;
+  if (previewCore) {
+    if (coreMems.length > 0) {
+      previewCore.innerHTML = coreMems.slice(0, 5).map(m => `• ${escapeHtml(m.text)}`).join('<br>');
+    } else {
+      previewCore.textContent = '暂无客观事实。';
+    }
+  }
+
+  // 6. 群聊共通线索
   const previewGroup = document.getElementById('previewGroupEvents');
   if (previewGroup) {
     let sharedGroupName = '';
@@ -697,7 +768,6 @@ function openSettingsModal() {
 /* ================= 6. 事件绑定 ================= */
 
 function bindDomEvents() {
-  // 🌟 返回桌面（双向安全协议：优先通知宿主收起沙盒，绝不重载页面防白屏与历史栈死锁）
   const btnBack = document.getElementById('btn-back');
   if (btnBack) {
     btnBack.addEventListener('click', () => {
@@ -706,7 +776,6 @@ function bindDomEvents() {
         sessionStorage.setItem('mcyt_return_desktop_page', '0');
       } catch (_) {}
 
-      // 1. 优先检测当前是否运行在宿主小手机沙盒内
       const isInsideHost = (window.parent && window.parent !== window);
       if (isInsideHost) {
         try {
@@ -719,7 +788,6 @@ function bindDomEvents() {
         } catch (_) {}
       }
 
-      // 2. 独立浏览器环境降级
       if (window.history.length > 1) {
         window.history.back();
       } else {
@@ -728,7 +796,6 @@ function bindDomEvents() {
     });
   }
 
-  // 关闭二级专属记忆殿堂
   const btnCloseHall = document.getElementById('btn-close-hall');
   if (btnCloseHall) {
     btnCloseHall.addEventListener('click', () => {
@@ -738,7 +805,6 @@ function bindDomEvents() {
     });
   }
 
-  // 二级殿堂内手动触发总结
   const btnHallTrigger = document.getElementById('btnHallTriggerSummary');
   if (btnHallTrigger) {
     btnHallTrigger.addEventListener('click', () => {
@@ -748,7 +814,7 @@ function bindDomEvents() {
       try {
         if (window.parent && typeof window.parent.checkAndTriggerAutoMemorySummary === 'function') {
           window.parent.checkAndTriggerAutoMemorySummary(npc.id || npc.name);
-          showToast(`已向记忆中枢发起「${displayName}」的深度事实凝练`);
+          showToast(`已向记忆中枢发起「${displayName}」的深度多维提炼`);
         } else {
           showToast(`已将「${displayName}」排入后台事实凝练队列`);
         }
@@ -758,7 +824,6 @@ function bindDomEvents() {
     });
   }
 
-  // 通用关闭
   document.querySelectorAll('[data-close]').forEach((el) => {
     el.addEventListener('click', () => {
       const modal = document.getElementById(el.dataset.close);
@@ -766,7 +831,6 @@ function bindDomEvents() {
     });
   });
 
-  // 配置中心弹窗与科普
   const btnOpenSettings = document.getElementById('btn-open-settings');
   const btnSaveSettings = document.getElementById('btn-save-settings');
   const btnPickEmbed = document.getElementById('btn-pick-embed');
@@ -793,7 +857,6 @@ function bindDomEvents() {
     });
   }
 
-  // 保存设置
   if (btnSaveSettings) {
     btnSaveSettings.addEventListener('click', () => {
       state.config.apiUrl = document.getElementById('cfg-api-url').value.trim();
@@ -820,7 +883,6 @@ function bindDomEvents() {
     });
   }
 
-  // 追忆搜索
   const searchInput = document.getElementById('search-input');
   const clearBtn = document.getElementById('btn-clear-search');
   let searchTimer = null;
@@ -843,7 +905,6 @@ function bindDomEvents() {
     });
   }
 
-  // 手动收纳记忆
   const btnOpenIngest = document.getElementById('btn-open-ingest');
   const btnSaveIngest = document.getElementById('btn-save-ingest');
   const salienceRange = document.getElementById('ingest-salience');
@@ -878,6 +939,7 @@ function bindDomEvents() {
       const newMem = {
         id: 'mem_' + Date.now(),
         npcName,
+        category: '长效事实',
         text,
         tags: rawTags ? rawTags.split(/\s+/).filter(Boolean) : ['手动收纳'],
         salience: parseFloat(salienceRange.value) || 0.8,
@@ -896,7 +958,6 @@ function bindDomEvents() {
     });
   }
 
-  // 跨窗口总线监听
   window.addEventListener('message', (event) => {
     if (!event.data) return;
 
