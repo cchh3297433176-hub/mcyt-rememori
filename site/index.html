@@ -6,14 +6,14 @@
   <title>忆海 — 角色多维记忆中枢</title>
   <link rel="stylesheet" href="style.css" />
   <style>
-    /* 🌟 微信小程序现代微光设计体系（一行双列大头像网格） */
+    /* 🌟 微信小程序现代微光设计体系（无Emoji、纯粹素雅质感） */
     :root {
-      --rem-bg-grad: linear-gradient(180deg, #16152b 0%, #1e1b38 45%, #181628 100%);
-      --rem-card-bg: rgba(255, 255, 255, 0.07);
-      --rem-card-border: rgba(255, 255, 255, 0.12);
-      --rem-card-active: rgba(255, 255, 255, 0.14);
-      --rem-text-main: #f3f4f8;
-      --rem-text-sub: rgba(240, 240, 255, 0.65);
+      --rem-bg-grad: linear-gradient(180deg, #151428 0%, #1c1936 45%, #161426 100%);
+      --rem-card-bg: rgba(255, 255, 255, 0.06);
+      --rem-card-border: rgba(255, 255, 255, 0.10);
+      --rem-card-active: rgba(255, 255, 255, 0.12);
+      --rem-text-main: #f5f6fa;
+      --rem-text-sub: rgba(240, 240, 255, 0.60);
       --rem-accent: #07c160;
     }
 
@@ -28,7 +28,7 @@
     }
 
     .app-header {
-      background: rgba(22, 21, 43, 0.85);
+      background: rgba(21, 20, 40, 0.88);
       backdrop-filter: blur(16px);
       -webkit-backdrop-filter: blur(16px);
       border-bottom: 0.5px solid rgba(255, 255, 255, 0.08);
@@ -37,7 +37,6 @@
       z-index: 100;
     }
 
-    /* 微信小程序风格居中大标题 */
     .mini-top-bar {
       display: flex;
       align-items: center;
@@ -47,17 +46,16 @@
     }
 
     .mini-center-title {
-      font-size: 16.5px;
+      font-size: 16px;
       font-weight: 600;
       letter-spacing: 0.5px;
       color: #fff;
     }
 
-    /* 胶囊搜索框 */
     .search-pill-box {
       margin: 8px 16px 14px;
-      background: rgba(255, 255, 255, 0.09);
-      border: 0.5px solid rgba(255, 255, 255, 0.14);
+      background: rgba(255, 255, 255, 0.08);
+      border: 0.5px solid rgba(255, 255, 255, 0.12);
       border-radius: 20px;
       padding: 7px 14px;
       display: flex;
@@ -75,17 +73,16 @@
     }
 
     .search-pill-box input::placeholder {
-      color: rgba(255, 255, 255, 0.42);
+      color: rgba(255, 255, 255, 0.40);
     }
 
-    /* 一行双列现代卡片网格 */
     .npc-grid-section {
       padding: 4px 16px 28px;
     }
 
     .section-category-title {
-      font-size: 13.5px;
-      font-weight: 600;
+      font-size: 13px;
+      font-weight: 500;
       color: var(--rem-text-sub);
       margin-bottom: 12px;
       display: flex;
@@ -129,9 +126,9 @@
       border-radius: 50%;
       object-fit: cover;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
-      border: 1.5px solid rgba(255, 255, 255, 0.3);
+      border: 1.5px solid rgba(255, 255, 255, 0.25);
       display: block;
-      background: #2a2845;
+      background: #252240;
     }
 
     .npc-card-name {
@@ -168,7 +165,7 @@
       box-shadow: 0 2px 6px rgba(0,0,0,0.3);
     }
 
-    /* 🌟 二级专属角色记忆殿堂视图（覆盖展示） */
+    /* 🌟 二级专属角色记忆殿堂视图 */
     .character-hall-view {
       position: fixed;
       inset: 0;
@@ -191,7 +188,7 @@
       align-items: center;
       justify-content: space-between;
       border-bottom: 0.5px solid rgba(255, 255, 255, 0.08);
-      background: rgba(22, 21, 43, 0.85);
+      background: rgba(21, 20, 40, 0.88);
       backdrop-filter: blur(16px);
       position: sticky;
       top: 0;
@@ -201,8 +198,8 @@
     .hall-hero-card {
       margin: 16px;
       padding: 16px;
-      background: rgba(255, 255, 255, 0.08);
-      border: 0.5px solid rgba(255, 255, 255, 0.12);
+      background: rgba(255, 255, 255, 0.06);
+      border: 0.5px solid rgba(255, 255, 255, 0.10);
       border-radius: 16px;
       display: flex;
       align-items: center;
@@ -210,8 +207,8 @@
     }
 
     .hall-section-title {
-      font-size: 13.5px;
-      font-weight: 600;
+      font-size: 13px;
+      font-weight: 500;
       color: var(--rem-text-sub);
       margin: 18px 16px 8px;
     }
@@ -219,23 +216,22 @@
     .hall-block-item {
       margin: 0 16px 10px;
       padding: 14px;
-      background: rgba(255, 255, 255, 0.06);
-      border: 0.5px solid rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.05);
+      border: 0.5px solid rgba(255, 255, 255, 0.08);
       border-radius: 14px;
-      cursor: pointer;
     }
 
     .hall-block-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: 6px;
+      margin-bottom: 8px;
     }
 
     .hall-block-title {
-      font-size: 14px;
+      font-size: 13.5px;
       font-weight: 600;
-      color: #fff;
+      color: #f0f2f8;
       display: flex;
       align-items: center;
       gap: 6px;
@@ -243,8 +239,32 @@
 
     .hall-block-preview {
       font-size: 12px;
-      color: var(--rem-text-sub);
-      line-height: 1.5;
+      color: rgba(240, 240, 255, 0.72);
+      line-height: 1.6;
+    }
+
+    /* 素雅和谐的底栏提炼按钮（磨砂玻璃白微边，拒绝黄色闪电与绿色胶囊） */
+    .btn-clean-summary {
+      width: 100%;
+      border: 0.5px solid rgba(255, 255, 255, 0.20);
+      background: rgba(255, 255, 255, 0.08);
+      color: #f3f4f8;
+      padding: 12px 20px;
+      border-radius: 12px;
+      font-size: 13.5px;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      backdrop-filter: blur(10px);
+      transition: background 0.2s, transform 0.15s;
+    }
+
+    .btn-clean-summary:active {
+      transform: scale(0.98);
+      background: rgba(255, 255, 255, 0.14);
     }
   </style>
 </head>
@@ -273,8 +293,8 @@
             <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
           </svg>
         </button>
-        <button type="button" class="icon-nav-btn primary" id="btn-open-ingest" aria-label="收纳新记忆" style="color:#07c160;">
-          <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <button type="button" class="icon-nav-btn primary" id="btn-open-ingest" aria-label="收纳新记忆" style="color:rgba(255,255,255,0.85);">
+          <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <line x1="12" y1="5" x2="12" y2="19"></line>
             <line x1="5" y1="12" x2="19" y2="12"></line>
           </svg>
@@ -285,9 +305,9 @@
 
   <main class="app-main" style="padding-bottom:30px;">
     
-    <!-- 胶囊搜索框（致敬小程序风格） -->
+    <!-- 胶囊搜索框 -->
     <div class="search-pill-box">
-      <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <circle cx="11" cy="11" r="8"></circle>
         <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
       </svg>
@@ -298,16 +318,13 @@
     <!-- 角色大头像一行双列现代网格区 -->
     <section class="npc-grid-section">
       <div class="section-category-title">
-        <span>全部角色伙伴档案</span>
+        <span>伙伴档案与往昔</span>
         <span id="stat-total-characters" style="font-size:11.5px;color:rgba(255,255,255,0.45);">加载中...</span>
       </div>
 
-      <div class="npc-dual-grid" id="npcDualGridContainer">
-        <!-- 动态生成一行双列大头像卡片 -->
-      </div>
+      <div class="npc-dual-grid" id="npcDualGridContainer"></div>
     </section>
 
-    <!-- 原有记忆全量流（保留隐藏备用，供向量与关键词直接召回） -->
     <section class="memory-stream-section" id="rawMemoryStreamSection" style="display:none;">
       <div class="section-meta">
         <span class="meta-title" id="stream-meta-title">记忆列表</span>
@@ -318,7 +335,7 @@
 
   </main>
 
-  <!-- 🌟 二级专属角色记忆殿堂视图（点击卡片下钻） -->
+  <!-- 🌟 二级专属角色记忆殿堂视图（去Emoji素雅设计） -->
   <div class="character-hall-view" id="characterHallView" style="display:none;">
     <div class="hall-header">
       <button type="button" class="icon-nav-btn" id="btn-close-hall" style="color:#fff;display:flex;align-items:center;gap:4px;">
@@ -330,53 +347,77 @@
     </div>
 
     <div class="hall-hero-card">
-      <img id="hallAvatarImg" src="assets/icons/chat.png" style="width:68px;height:68px;border-radius:50%;object-fit:cover;border:2px solid rgba(255,255,255,0.4);" />
+      <img id="hallAvatarImg" src="assets/icons/chat.png" style="width:68px;height:68px;border-radius:50%;object-fit:cover;border:1.5px solid rgba(255,255,255,0.3);" />
       <div>
-        <div id="hallHeroTitle" style="font-size:16.5px;font-weight:bold;color:#fff;">-</div>
+        <div id="hallHeroTitle" style="font-size:16px;font-weight:600;color:#fff;">-</div>
         <div id="hallHeroPersona" style="font-size:11.5px;color:rgba(255,255,255,0.6);margin-top:4px;line-height:1.4;">-</div>
       </div>
     </div>
 
-    <!-- 独立的四个多维记忆区块 -->
-    <div class="hall-section-title">时空与心理暗流</div>
-    <div class="hall-block-item" id="blockInnerState">
+    <!-- 1. 生活作息与习惯偏好 -->
+    <div class="hall-section-title">生活作息与偏好</div>
+    <div class="hall-block-item" id="blockHabits">
       <div class="hall-block-header">
-        <div class="hall-block-title">💭 角色当前心境与想法</div>
-        <span style="font-size:11px;color:#07c160;">点击查看</span>
+        <div class="hall-block-title">生活作息与习惯</div>
+        <span id="countHabits" style="font-size:11px;color:rgba(255,255,255,0.5);">0条</span>
       </div>
-      <div class="hall-block-preview" id="previewInnerState">暂无心境记录，在私聊中互动将自然沉淀。</div>
+      <div class="hall-block-preview" id="previewHabits">暂无习惯记录，日常交流中将自然提炼。</div>
     </div>
 
-    <div class="hall-section-title">往昔事实与雷区档案</div>
-    <div class="hall-block-item" id="blockCoreFacts">
-      <div class="hall-block-header">
-        <div class="hall-block-title">📜 上帝视角长效事实</div>
-        <span id="countCoreFacts" style="font-size:11px;color:#07c160;">0条</span>
-      </div>
-      <div class="hall-block-preview" id="previewCoreFacts">暂无客观事实，满额对白将自动触发凝练。</div>
-    </div>
-
-    <div class="hall-section-title">约定与待办信物</div>
+    <!-- 2. 彼此约定与待办事项 -->
+    <div class="hall-section-title">约定与待办事项</div>
     <div class="hall-block-item" id="blockPromises">
       <div class="hall-block-header">
-        <div class="hall-block-title">🎁 彼此承诺与重要事项</div>
-        <span id="countPromises" style="font-size:11px;color:#07c160;">0项</span>
+        <div class="hall-block-title">承诺与待办清单</div>
+        <span id="countPromises" style="font-size:11px;color:rgba(255,255,255,0.5);">0项</span>
       </div>
       <div class="hall-block-preview" id="previewPromises">暂无待办约定。</div>
     </div>
 
+    <!-- 3. 同伴印象与人际网络 -->
+    <div class="hall-section-title">同伴印象与人际圈</div>
+    <div class="hall-block-item" id="blockPeerImpressions">
+      <div class="hall-block-header">
+        <div class="hall-block-title">对其他同伴的印象</div>
+        <span id="countPeers" style="font-size:11px;color:rgba(255,255,255,0.5);">0位</span>
+      </div>
+      <div class="hall-block-preview" id="previewPeers">暂无对其他角色的直观印象。</div>
+    </div>
+
+    <!-- 4. 情感暗流与当下心境 -->
+    <div class="hall-section-title">情感暗流与心境</div>
+    <div class="hall-block-item" id="blockInnerState">
+      <div class="hall-block-header">
+        <div class="hall-block-title">角色心境与内心想法</div>
+        <span style="font-size:11px;color:rgba(255,255,255,0.5);">实时暗流</span>
+      </div>
+      <div class="hall-block-preview" id="previewInnerState">暂无心境心声，在私聊中互动将自然沉淀。</div>
+    </div>
+
+    <!-- 5. 往昔事实与雷区档案 -->
+    <div class="hall-section-title">关键往事与客观经历</div>
+    <div class="hall-block-item" id="blockCoreFacts">
+      <div class="hall-block-header">
+        <div class="hall-block-title">上帝视角客观长效事实</div>
+        <span id="countCoreFacts" style="font-size:11px;color:rgba(255,255,255,0.5);">0条</span>
+      </div>
+      <div class="hall-block-preview" id="previewCoreFacts">暂无客观事实。</div>
+    </div>
+
+    <!-- 6. 共同群聊与线索事件 -->
     <div class="hall-section-title">共同群聊与线索事件</div>
     <div class="hall-block-item" id="blockGroupEvents">
       <div class="hall-block-header">
-        <div class="hall-block-title">👥 群聊共通经历片段</div>
-        <span style="font-size:11px;color:#07c160;">共通感知</span>
+        <div class="hall-block-title">群聊共通经历</div>
+        <span style="font-size:11px;color:rgba(255,255,255,0.5);">共通状态</span>
       </div>
       <div class="hall-block-preview" id="previewGroupEvents">已与相关群聊自动连通。</div>
     </div>
 
-    <div style="padding:16px;text-align:center;">
-      <button type="button" id="btnHallTriggerSummary" style="border:none;background:rgba(7,193,96,0.18);color:#07c160;padding:10px 18px;border-radius:20px;font-size:12.5px;font-weight:600;cursor:pointer;">
-        ⚡ 立即对该角色聊天历史进行深度提炼
+    <!-- 磨砂白极简提炼按钮（和谐融入暗色夜空微光背景） -->
+    <div style="padding:20px 16px 36px;text-align:center;">
+      <button type="button" class="btn-clean-summary" id="btnHallTriggerSummary">
+        <span>开始对该角色对白进行深度提炼</span>
       </button>
     </div>
   </div>
@@ -392,8 +433,6 @@
         </div>
       </div>
       <div class="rem-modal-body scrollable">
-        
-        <!-- 邀请码与快速开通胶囊 -->
         <div class="promo-box" id="btn-open-promo">
           <div class="promo-info">
             <div class="promo-title">快速获取向量与 Reranker 渠道</div>
@@ -402,7 +441,7 @@
           <div class="promo-arrow">›</div>
         </div>
 
-        <div style="font-size:12px;font-weight:600;color:#07c160;margin:8px 0 4px;border-bottom:0.5px solid #eee;padding-bottom:3px;">
+        <div style="font-size:12px;font-weight:600;color:rgba(255,255,255,0.85);margin:8px 0 4px;border-bottom:0.5px solid rgba(255,255,255,0.1);padding-bottom:3px;">
           一、高维向量检索 (Embedding & Reranker)
         </div>
 
@@ -412,7 +451,6 @@
         <label class="form-label" for="cfg-api-key">向量 API 密钥 (API Key)</label>
         <input id="cfg-api-key" type="password" class="form-input" placeholder="sk-..." autocomplete="off" />
 
-        <!-- 向量模型选择 -->
         <div class="model-select-group">
           <div class="label-with-action">
             <div class="label-with-help">
@@ -424,7 +462,6 @@
           <input id="cfg-embed-model" type="text" class="form-input" placeholder="例如: BAAI/bge-m3" />
         </div>
 
-        <!-- 重排序模型选择 -->
         <div class="model-select-group">
           <div class="label-with-action">
             <div class="label-with-help">
@@ -444,8 +481,7 @@
           <input id="cfg-enable-vector" type="checkbox" class="wechat-switch" />
         </div>
 
-        <!-- 🧠 独立记忆总结专用配置通道 -->
-        <div style="font-size:12px;font-weight:600;color:#07c160;margin:16px 0 4px;border-bottom:0.5px solid #eee;padding-bottom:3px;">
+        <div style="font-size:12px;font-weight:600;color:rgba(255,255,255,0.85);margin:16px 0 4px;border-bottom:0.5px solid rgba(255,255,255,0.1);padding-bottom:3px;">
           二、后台记忆总结专用通道 (实惠低价模型)
         </div>
 
@@ -483,7 +519,7 @@
     </div>
   </div>
 
-  <!-- 浮层弹窗：仿微信白灰模型即时搜索选择弹窗 -->
+  <!-- 浮层弹窗：模型选择 -->
   <div class="rem-modal-mask" id="model-picker-modal" hidden>
     <div class="rem-modal-box">
       <div class="rem-modal-head">
@@ -502,7 +538,7 @@
     </div>
   </div>
 
-  <!-- 浮层弹窗：聊天记忆中枢简明科普 (100~150字) -->
+  <!-- 浮层弹窗：科普 -->
   <div class="rem-modal-mask" id="engine-info-modal" hidden>
     <div class="rem-modal-box">
       <div class="rem-modal-head">
@@ -562,7 +598,7 @@
         <textarea id="ingest-text" class="form-textarea" rows="3" placeholder="记录一句该角色深刻的约定、喜好或性格细节..."></textarea>
 
         <label class="form-label" for="ingest-tags">记忆标签（空格分隔）</label>
-        <input id="ingest-tags" type="text" class="form-input" placeholder="例如: 约定 习惯 生日" />
+        <input id="ingest-tags" type="text" class="form-input" placeholder="例如: 习惯 约定 印象" />
 
         <div class="form-row">
           <label class="form-label" for="ingest-salience">记忆深刻度: <span id="salience-val-text">0.8</span></label>
