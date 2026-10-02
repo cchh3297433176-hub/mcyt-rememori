@@ -1,6 +1,7 @@
 /**
  * 忆海 (Rememori) 独立记忆中枢前端驱动核心
  * - 聚合小手机内存对象 G.npcs 与独立持久化 CUSTOM_NPCS_BACKUP_KEY（全面支持自建与导入角色）
+ * - 🌟 微信小程序现代大头像一行双列微光网格与二级专属多维记忆殿堂
  * - 彻底切断逐条碎片口水话对白全量转记忆的旧通道，只保留高质量长效客观事实小结
  * - 接入 MemorySummarizer：支持后台独立低价模型静默总结与第三人称客观具名提炼（附带时间跨度）
  * - 监听 DELETE_NPC_MEMORIES 级联彻底删除角色全部记忆
@@ -25,6 +26,7 @@ const state = {
   activeFilter: 'all', // 'all' | npcName
   searchQuery: '',
   npcs: {}, // 汇聚所有内置与自建 NPC
+  currentSelectedNpc: null, // 当前在二级记忆殿堂查看的角色
   config: {
     apiUrl: 'https://api.siliconflow.cn/v1',
     apiKey: '',
@@ -52,7 +54,7 @@ async function initRememoriApp() {
   initBackgroundCanvas();
   loadHostNpcs();
   loadMemoriesFromStorage();
-  renderFilterCapsules();
+  renderDualGridNpcCards();
   renderMemoryList();
   updateOverviewStats();
   updateHeaderEngineState();
@@ -181,6 +183,7 @@ function ingestSummaryFacts(npcName, factsText, originalDialogue, extra = {}) {
 
   state.memories.unshift(newMem);
   saveMemoriesToStorage();
+  renderDualGridNpcCards();
   renderMemoryList();
   updateOverviewStats();
 }
@@ -221,7 +224,7 @@ function deleteNpcMemories(npcId, npcName) {
 
   saveMemoriesToStorage();
   loadHostNpcs();
-  renderFilterCapsules();
+  renderDualGridNpcCards();
   renderMemoryList();
   updateOverviewStats();
 }
@@ -324,9 +327,6 @@ async function executeRecall(query, roleFilterOverride = null) {
   if (!q) return baseCandidates;
 
   if (state.config.vectorEnabled && state.config.apiKey) {
-    const feedbackEl = document.getElementById('search-feedback');
-    if (feedbackEl) feedbackEl.hidden = false;
-
     try {
       const qVec = await fetchEmbedding(q);
       for (const m of baseCandidates) {
@@ -342,12 +342,9 @@ async function executeRecall(query, roleFilterOverride = null) {
 
       baseCandidates.sort((a, b) => (b._score || 0) - (a._score || 0));
       const topCandidates = baseCandidates.slice(0, 10);
-      const reranked = await rerankMemories(q, topCandidates);
-      if (feedbackEl) feedbackEl.hidden = true;
-      return reranked;
+      return await rerankMemories(q, topCandidates);
     } catch (err) {
       console.warn('[Rememori] 向量检索降级:', err);
-      if (feedbackEl) feedbackEl.hidden = true;
     }
   }
 
@@ -375,149 +372,158 @@ async function executeRecall(query, roleFilterOverride = null) {
     .sort((a, b) => b._score - a._score);
 }
 
-/* ================= 3. 界面渲染 ================= */
+/* ================= 3. 界面渲染（微信小程序一行双列大头像网格） ================= */
 
 function updateOverviewStats() {
-  const totalEl = document.getElementById('stat-total-memories');
-  const evidenceEl = document.getElementById('stat-active-evidence');
-  const countMetaEl = document.getElementById('stream-meta-count');
-
-  const filtered = filterByRoleOnly(state.memories);
-  if (totalEl) totalEl.textContent = state.memories.length;
-  if (evidenceEl) evidenceEl.textContent = state.memories.filter((m) => m.rawQuote).length;
-  if (countMetaEl) countMetaEl.textContent = `当前展示 ${filtered.length} 条`;
+  const statChars = document.getElementById('stat-total-characters');
+  if (statChars) {
+    const count = Object.keys(state.npcs).length;
+    statChars.textContent = `共 ${count} 位伙伴 · 沉淀 ${state.memories.length} 条往昔`;
+  }
 }
 
 function updateHeaderEngineState() {
-  const subEl = document.getElementById('header-engine-mode');
   const statIndexState = document.getElementById('stat-index-state');
-  if (state.config.vectorEnabled && state.config.apiKey) {
-    if (subEl) subEl.textContent = state.config.rerankModel ? '向量+Reranker精排' : '高维语义向量';
-    if (statIndexState) statIndexState.textContent = '向量';
-  } else {
-    if (subEl) subEl.textContent = '本地混合检索';
-    if (statIndexState) statIndexState.textContent = '本地';
+  if (statIndexState) {
+    statIndexState.textContent = (state.config.vectorEnabled && state.config.apiKey) ? '向量' : '本地';
   }
 }
 
-function filterByRoleOnly(list) {
-  if (state.activeFilter === 'all') return list;
-  return list.filter((m) => m.npcName === state.activeFilter || m.npcId === state.activeFilter);
-}
-
-function renderFilterCapsules() {
-  const container = document.getElementById('filter-capsules');
+// 🌟 渲染一行双列大头像卡片网格（致敬你截图的小程序风格）
+function renderDualGridNpcCards() {
+  const gridContainer = document.getElementById('npcDualGridContainer');
   const ingestSelect = document.getElementById('ingest-npc-select');
-  if (!container) return;
+  if (!gridContainer) return;
 
-  const roleNameMap = new Map();
-
-  Object.values(state.npcs).forEach((npc) => {
-    if (!npc) return;
-    const name = npc.name || npc.id;
-    const displayName = npc.remark ? npc.remark : name;
-    if (displayName) roleNameMap.set(displayName, npc);
-  });
-
-  state.memories.forEach((m) => {
-    if (m.npcName && !roleNameMap.has(m.npcName)) {
-      roleNameMap.set(m.npcName, { name: m.npcName });
-    }
-  });
-
-  let html = `<button type="button" class="capsule ${state.activeFilter === 'all' ? 'active' : ''}" data-filter="all">全角色</button>`;
+  const roleList = Object.values(state.npcs);
   let selectHtml = '';
 
-  roleNameMap.forEach((npc, displayName) => {
-    const showLabel = npc.remark && npc.name && npc.remark !== npc.name ? `${npc.remark} (${npc.name})` : displayName;
-    const isActive = state.activeFilter === displayName;
-    html += `<button type="button" class="capsule ${isActive ? 'active' : ''}" data-filter="${escapeHtml(displayName)}">${escapeHtml(showLabel)}</button>`;
-    selectHtml += `<option value="${escapeHtml(displayName)}">${escapeHtml(showLabel)}</option>`;
+  const q = state.searchQuery.toLowerCase().trim();
+  const filteredRoles = roleList.filter(n => {
+    if (!n) return false;
+    const name = (n.remark || n.name || n.id || '').toLowerCase();
+    const persona = (n.persona || '').toLowerCase();
+    return !q || name.includes(q) || persona.includes(q);
   });
 
-  container.innerHTML = html;
-  if (ingestSelect) ingestSelect.innerHTML = selectHtml;
-
-  container.querySelectorAll('.capsule').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      state.activeFilter = btn.dataset.filter;
-      container.querySelectorAll('.capsule').forEach((c) => c.classList.remove('active'));
-      btn.classList.add('active');
-      renderMemoryList();
-      updateOverviewStats();
-    });
-  });
-}
-
-async function renderMemoryList() {
-  const listEl = document.getElementById('memory-list');
-  const emptyEl = document.getElementById('empty-state');
-  if (!listEl) return;
-
-  const result = await executeRecall(state.searchQuery);
-
-  if (result.length === 0) {
-    listEl.innerHTML = '';
-    if (emptyEl) {
-      emptyEl.hidden = false;
-      listEl.appendChild(emptyEl);
-    }
+  if (filteredRoles.length === 0) {
+    gridContainer.innerHTML = `
+      <div style="grid-column: 1 / -1; padding: 40px 16px; text-align: center; color: rgba(255,255,255,0.4);">
+        未发现匹配的角色档案
+      </div>
+    `;
     return;
   }
 
-  if (emptyEl) emptyEl.hidden = true;
+  gridContainer.innerHTML = filteredRoles.map(npc => {
+    const displayName = npc.remark || npc.name || npc.id || '伙伴';
+    const avatarUrl = npc.avatarUrl || npc.avatar || 'assets/icons/chat.png';
+    const memCount = state.memories.filter(m => m.npcName === displayName || m.npcId === npc.id || m.npcName === npc.name).length;
 
-  listEl.innerHTML = result
-    .map((item) => {
-      const timeStr = formatTime(item.timestamp);
-      const tagsHtml = (item.tags || [])
-        .map((tag) => `<span class="tag-badge">#${escapeHtml(tag)}</span>`)
-        .join('');
+    selectHtml += `<option value="${escapeHtml(displayName)}">${escapeHtml(displayName)}</option>`;
 
-      const npcInfo = Object.values(state.npcs).find(n => (n.remark === item.npcName || n.name === item.npcName || n.id === item.npcName));
-      const displayName = npcInfo && npcInfo.remark ? `${npcInfo.remark}` : (item.npcName || '通用联系人');
+    return `
+      <div class="npc-grid-card" data-npcid="${escapeHtml(npc.id || npc.name)}">
+        <div class="npc-avatar-wrap">
+          <img class="npc-avatar-img" src="${escapeHtml(avatarUrl)}" onerror="this.src='assets/icons/chat.png';" alt="${escapeHtml(displayName)}" />
+          ${memCount > 0 ? `<div class="npc-badge-pill">${memCount}</div>` : ''}
+        </div>
+        <div class="npc-card-name">${escapeHtml(displayName)}</div>
+        <div class="npc-card-meta">
+          <span>${memCount} 条沉淀</span>
+          <span>·</span>
+          <span>${escapeHtml(npc.region || '在线')}</span>
+        </div>
+      </div>
+    `;
+  }).join('');
 
-      return `
-        <article class="memory-card" data-id="${item.id}">
-          <div class="card-top">
-            <div class="tag-list">
-              <span class="npc-badge">${escapeHtml(displayName)}</span>
-              ${tagsHtml}
-            </div>
-            <div class="salience-indicator">★ ${(Number(item.salience) || 0.8).toFixed(1)}</div>
-          </div>
-          <div class="card-text">${escapeHtml(item.text)}</div>
-          <div class="card-foot">
-            <span class="card-time">${timeStr}</span>
-            <div class="card-actions">
-              ${item.rawQuote ? `<button type="button" class="card-btn btn-view-evidence" data-id="${item.id}">对白凭据</button>` : ''}
-              <button type="button" class="card-btn delete btn-delete-mem" data-id="${item.id}">淡忘</button>
-            </div>
-          </div>
-        </article>
-      `;
-    })
-    .join('');
+  if (ingestSelect) ingestSelect.innerHTML = selectHtml;
 
-  listEl.querySelectorAll('.btn-view-evidence').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const mem = state.memories.find((m) => m.id === btn.dataset.id);
-      if (mem) openEvidenceModal(mem);
-    });
-  });
-
-  listEl.querySelectorAll('.btn-delete-mem').forEach((btn) => {
-    btn.addEventListener('click', async () => {
-      const ok = await showWechatDialog('淡忘记忆', '确定要将这段记忆从角色的认知中抹除吗？抹除后不可恢复。');
-      if (ok) {
-        state.memories = state.memories.filter((m) => m.id !== btn.dataset.id);
-        saveMemoriesToStorage();
-        renderMemoryList();
-        updateOverviewStats();
-        showToast('记忆已淡忘');
+  // 绑定点击进入二级专属记忆殿堂
+  gridContainer.querySelectorAll('.npc-grid-card').forEach(card => {
+    card.addEventListener('click', () => {
+      const nid = card.dataset.npcid;
+      const targetNpc = roleList.find(n => (n.id === nid || n.name === nid));
+      if (targetNpc) {
+        openCharacterHall(targetNpc);
       }
     });
   });
+}
+
+// 🌟 打开二级角色专属多维记忆殿堂
+function openCharacterHall(npc) {
+  state.currentSelectedNpc = npc;
+  const hallView = document.getElementById('characterHallView');
+  if (!hallView) return;
+
+  const displayName = npc.remark || npc.name || npc.id || '伙伴';
+  document.getElementById('hallCharacterName').textContent = displayName;
+  document.getElementById('hallHeroTitle').textContent = displayName;
+  document.getElementById('hallHeroPersona').textContent = npc.persona ? npc.persona.slice(0, 45) + '...' : '日常MC同伴';
+
+  const avatarImg = document.getElementById('hallAvatarImg');
+  if (avatarImg) avatarImg.src = npc.avatarUrl || npc.avatar || 'assets/icons/chat.png';
+
+  // 1. 心境与心声
+  const innerVoice = npc.latestInnerVoice;
+  const innerTime = npc.latestInnerVoiceTime;
+  const previewInner = document.getElementById('previewInnerState');
+  if (previewInner) {
+    if (innerVoice) {
+      previewInner.innerHTML = `<span style="color:#07c160;">[${innerTime || '近期'}]</span> “${escapeHtml(innerVoice)}”`;
+    } else {
+      previewInner.textContent = '暂无心境心声，在私聊中互动将自然沉淀。';
+    }
+  }
+
+  // 2. 上帝视角长效事实
+  const relatedMems = state.memories.filter(m => m.npcName === displayName || m.npcId === npc.id || m.npcName === npc.name);
+  const countCore = document.getElementById('countCoreFacts');
+  const previewCore = document.getElementById('previewCoreFacts');
+  if (countCore) countCore.textContent = `${relatedMems.length} 条`;
+  if (previewCore) {
+    if (relatedMems.length > 0) {
+      const top3 = relatedMems.slice(0, 3).map(m => `• ${escapeHtml(m.text)}`).join('<br>');
+      previewCore.innerHTML = top3;
+    } else {
+      previewCore.textContent = '暂无客观事实，满额对白将自动触发凝练。';
+    }
+  }
+
+  // 3. 约定与承诺清单
+  const countProm = document.getElementById('countPromises');
+  const previewProm = document.getElementById('previewPromises');
+  const promiseMems = relatedMems.filter(m => (m.tags && (m.tags.includes('约定') || m.tags.includes('承诺'))));
+  if (countProm) countProm.textContent = `${promiseMems.length} 项`;
+  if (previewProm) {
+    if (promiseMems.length > 0) {
+      previewProm.innerHTML = promiseMems.map(m => `🎁 ${escapeHtml(m.text)}`).join('<br>');
+    } else {
+      previewProm.textContent = '暂无待办约定。';
+    }
+  }
+
+  // 4. 群聊共通线索
+  const previewGroup = document.getElementById('previewGroupEvents');
+  if (previewGroup) {
+    let sharedGroupName = '';
+    try {
+      if (window.parent && window.parent.G && window.parent.G.groups) {
+        const gList = Object.values(window.parent.G.groups);
+        const inGroup = gList.find(g => (g.members && g.members.includes(npc.id)));
+        if (inGroup) sharedGroupName = inGroup.name;
+      }
+    } catch (_) {}
+    previewGroup.textContent = sharedGroupName ? `已与群聊「${sharedGroupName}」连通共通记忆通道` : '当前尚未加入任何共同开黑群聊';
+  }
+
+  hallView.style.display = 'flex';
+}
+
+function renderMemoryList() {
+  renderDualGridNpcCards();
 }
 
 /* ================= 4. 模型单选即时过滤弹窗 ================= */
@@ -663,22 +669,6 @@ function showWechatDialog(title, content) {
   });
 }
 
-function openEvidenceModal(mem) {
-  const modal = document.getElementById('evidence-modal');
-  const quoteBox = document.getElementById('evidence-quote-box');
-  const timeVal = document.getElementById('evidence-time-val');
-  const npcVal = document.getElementById('evidence-npc-val');
-  const badge = document.getElementById('evidence-origin-badge');
-
-  if (!modal) return;
-  if (quoteBox) quoteBox.textContent = mem.rawQuote || '无原始记录';
-  if (timeVal) timeVal.textContent = formatTime(mem.timestamp, true);
-  if (npcVal) npcVal.textContent = mem.npcName || '通用联系人';
-  if (badge) badge.textContent = mem.source ? `留底渠道: ${mem.source}` : '真实对白留底';
-
-  modal.hidden = false;
-}
-
 function openSettingsModal() {
   const modal = document.getElementById('settings-modal');
   if (!modal) return;
@@ -725,7 +715,7 @@ function bindDomEvents() {
           if (typeof window.parent.closeInAppSandbox === 'function') {
             window.parent.closeInAppSandbox();
           }
-          return; // 立即阻断后续执行，绝对不调用 history.back 或 location.href
+          return;
         } catch (_) {}
       }
 
@@ -738,6 +728,36 @@ function bindDomEvents() {
     });
   }
 
+  // 关闭二级专属记忆殿堂
+  const btnCloseHall = document.getElementById('btn-close-hall');
+  if (btnCloseHall) {
+    btnCloseHall.addEventListener('click', () => {
+      const hallView = document.getElementById('characterHallView');
+      if (hallView) hallView.style.display = 'none';
+      state.currentSelectedNpc = null;
+    });
+  }
+
+  // 二级殿堂内手动触发总结
+  const btnHallTrigger = document.getElementById('btnHallTriggerSummary');
+  if (btnHallTrigger) {
+    btnHallTrigger.addEventListener('click', () => {
+      if (!state.currentSelectedNpc) return;
+      const npc = state.currentSelectedNpc;
+      const displayName = npc.remark || npc.name || npc.id;
+      try {
+        if (window.parent && typeof window.parent.checkAndTriggerAutoMemorySummary === 'function') {
+          window.parent.checkAndTriggerAutoMemorySummary(npc.id || npc.name);
+          showToast(`已向记忆中枢发起「${displayName}」的深度事实凝练`);
+        } else {
+          showToast(`已将「${displayName}」排入后台事实凝练队列`);
+        }
+      } catch (_) {
+        showToast('请求已发送');
+      }
+    });
+  }
+
   // 通用关闭
   document.querySelectorAll('[data-close]').forEach((el) => {
     el.addEventListener('click', () => {
@@ -746,31 +766,12 @@ function bindDomEvents() {
     });
   });
 
-  // 微信 Dialog
-  const btnDialogCancel = document.getElementById('btn-dialog-cancel');
-  const btnDialogConfirm = document.getElementById('btn-dialog-confirm');
-  if (btnDialogCancel) {
-    btnDialogCancel.addEventListener('click', () => {
-      document.getElementById('dialog-modal').hidden = true;
-      if (state.dialogResolver) state.dialogResolver(false);
-    });
-  }
-  if (btnDialogConfirm) {
-    btnDialogConfirm.addEventListener('click', () => {
-      document.getElementById('dialog-modal').hidden = true;
-      if (state.dialogResolver) state.dialogResolver(true);
-    });
-  }
-
   // 配置中心弹窗与科普
   const btnOpenSettings = document.getElementById('btn-open-settings');
   const btnSaveSettings = document.getElementById('btn-save-settings');
   const btnPickEmbed = document.getElementById('btn-pick-embed');
   const btnPickRerank = document.getElementById('btn-pick-rerank');
   const btnPickSummary = document.getElementById('btn-pick-summary-model');
-  const btnInfoEngine = document.getElementById('btn-info-engine');
-  const btnInfoEmbed = document.getElementById('btn-info-embed');
-  const btnInfoRerank = document.getElementById('btn-info-rerank');
   const useHostChk = document.getElementById('cfg-summary-use-host');
 
   if (btnOpenSettings) btnOpenSettings.addEventListener('click', openSettingsModal);
@@ -784,10 +785,6 @@ function bindDomEvents() {
       if (customPanel) customPanel.style.display = e.target.checked ? 'none' : 'block';
     });
   }
-
-  if (btnInfoEngine) btnInfoEngine.addEventListener('click', () => { document.getElementById('engine-info-modal').hidden = false; });
-  if (btnInfoEmbed) btnInfoEmbed.addEventListener('click', () => { document.getElementById('embed-info-modal').hidden = false; });
-  if (btnInfoRerank) btnInfoRerank.addEventListener('click', () => { document.getElementById('rerank-info-modal').hidden = false; });
 
   const pickerSearch = document.getElementById('picker-search-input');
   if (pickerSearch) {
@@ -818,28 +815,8 @@ function bindDomEvents() {
 
       document.getElementById('settings-modal').hidden = true;
       updateHeaderEngineState();
-      renderMemoryList();
+      renderDualGridNpcCards();
       showToast('配置已生效');
-    });
-  }
-
-  // 专属推广弹窗
-  const btnOpenPromo = document.getElementById('btn-open-promo');
-  const btnCopyPromo = document.getElementById('btn-copy-promo');
-  if (btnOpenPromo) {
-    btnOpenPromo.addEventListener('click', () => {
-      document.getElementById('promo-modal').hidden = false;
-    });
-  }
-  if (btnCopyPromo) {
-    btnCopyPromo.addEventListener('click', async () => {
-      const url = document.getElementById('promo-url-text').textContent;
-      try {
-        await navigator.clipboard.writeText(url);
-        showToast('邀请链接已复制到剪贴板');
-      } catch (err) {
-        showToast('请长按文本手动复制');
-      }
     });
   }
 
@@ -853,8 +830,8 @@ function bindDomEvents() {
       if (clearBtn) clearBtn.hidden = !state.searchQuery;
       clearTimeout(searchTimer);
       searchTimer = setTimeout(() => {
-        renderMemoryList();
-      }, 300);
+        renderDualGridNpcCards();
+      }, 200);
     });
   }
   if (clearBtn) {
@@ -862,7 +839,7 @@ function bindDomEvents() {
       if (searchInput) searchInput.value = '';
       state.searchQuery = '';
       clearBtn.hidden = true;
-      renderMemoryList();
+      renderDualGridNpcCards();
     });
   }
 
@@ -906,14 +883,14 @@ function bindDomEvents() {
         salience: parseFloat(salienceRange.value) || 0.8,
         timestamp: Date.now(),
         source: '手动记录',
-        rawQuote: `玩家于 ${formatTime(Date.now(), true)} 为联系人【${npcName}】手动补充的认知细节。`,
+        rawQuote: `玩家为联系人【${npcName}】手动补充的认知细节。`,
         embedding: null,
       };
 
       state.memories.unshift(newMem);
       saveMemoriesToStorage();
       document.getElementById('ingest-modal').hidden = true;
-      renderMemoryList();
+      renderDualGridNpcCards();
       updateOverviewStats();
       showToast('角色记忆已收纳');
     });
@@ -931,8 +908,7 @@ function bindDomEvents() {
       deleteNpcMemories(event.data.npcId, event.data.npcName);
     } else if (event.data.type === 'NPCS_UPDATED') {
       loadHostNpcs();
-      renderFilterCapsules();
-      renderMemoryList();
+      renderDualGridNpcCards();
       updateOverviewStats();
     }
   });
@@ -953,7 +929,7 @@ function initBackgroundCanvas() {
     canvas.width = w * dpr;
     canvas.height = h * dpr;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    const count = Math.min(30, Math.floor((w * h) / 36000));
+    const count = Math.min(24, Math.floor((w * h) / 38000));
     nodes = Array.from({ length: count }, () => ({
       x: Math.random() * w,
       y: Math.random() * h,
@@ -975,7 +951,7 @@ function initBackgroundCanvas() {
       if (n.y < 0 || n.y > h) n.vy *= -1;
     }
 
-    ctx.fillStyle = 'rgba(7, 193, 96, 0.4)';
+    ctx.fillStyle = 'rgba(7, 193, 96, 0.35)';
     for (const n of nodes) {
       ctx.beginPath();
       ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
