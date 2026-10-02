@@ -3,38 +3,277 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
-  <title>忆海 — 独立记忆中枢</title>
+  <title>忆海 — 角色多维记忆中枢</title>
   <link rel="stylesheet" href="style.css" />
+  <style>
+    /* 🌟 微信小程序现代微光设计体系（一行双列大头像网格） */
+    :root {
+      --rem-bg-grad: linear-gradient(180deg, #16152b 0%, #1e1b38 45%, #181628 100%);
+      --rem-card-bg: rgba(255, 255, 255, 0.07);
+      --rem-card-border: rgba(255, 255, 255, 0.12);
+      --rem-card-active: rgba(255, 255, 255, 0.14);
+      --rem-text-main: #f3f4f8;
+      --rem-text-sub: rgba(240, 240, 255, 0.65);
+      --rem-accent: #07c160;
+    }
+
+    body {
+      background: var(--rem-bg-grad);
+      color: var(--rem-text-main);
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      min-height: 100vh;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    .app-header {
+      background: rgba(22, 21, 43, 0.85);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom: 0.5px solid rgba(255, 255, 255, 0.08);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    /* 微信小程序风格居中大标题 */
+    .mini-top-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 48px;
+      padding: 0 14px;
+    }
+
+    .mini-center-title {
+      font-size: 16.5px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      color: #fff;
+    }
+
+    /* 胶囊搜索框 */
+    .search-pill-box {
+      margin: 8px 16px 14px;
+      background: rgba(255, 255, 255, 0.09);
+      border: 0.5px solid rgba(255, 255, 255, 0.14);
+      border-radius: 20px;
+      padding: 7px 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .search-pill-box input {
+      background: transparent;
+      border: none;
+      outline: none;
+      color: #fff;
+      font-size: 13.5px;
+      flex: 1;
+    }
+
+    .search-pill-box input::placeholder {
+      color: rgba(255, 255, 255, 0.42);
+    }
+
+    /* 一行双列现代卡片网格 */
+    .npc-grid-section {
+      padding: 4px 16px 28px;
+    }
+
+    .section-category-title {
+      font-size: 13.5px;
+      font-weight: 600;
+      color: var(--rem-text-sub);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .npc-dual-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .npc-grid-card {
+      background: var(--rem-card-bg);
+      border: 0.5px solid var(--rem-card-border);
+      border-radius: 16px;
+      padding: 16px 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      cursor: pointer;
+      position: relative;
+      transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
+    }
+
+    .npc-grid-card:active {
+      transform: scale(0.97);
+      background: var(--rem-card-active);
+    }
+
+    .npc-avatar-wrap {
+      position: relative;
+      margin-bottom: 10px;
+    }
+
+    .npc-avatar-img {
+      width: 62px;
+      height: 62px;
+      border-radius: 50%;
+      object-fit: cover;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+      border: 1.5px solid rgba(255, 255, 255, 0.3);
+      display: block;
+      background: #2a2845;
+    }
+
+    .npc-card-name {
+      font-size: 14.5px;
+      font-weight: 600;
+      color: #ffffff;
+      text-align: center;
+      margin-bottom: 4px;
+      width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .npc-card-meta {
+      font-size: 11px;
+      color: var(--rem-text-sub);
+      text-align: center;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .npc-badge-pill {
+      position: absolute;
+      top: -2px;
+      right: -2px;
+      background: #07c160;
+      color: #fff;
+      font-size: 9.5px;
+      font-weight: bold;
+      border-radius: 10px;
+      padding: 1px 6px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    }
+
+    /* 🌟 二级专属角色记忆殿堂视图（覆盖展示） */
+    .character-hall-view {
+      position: fixed;
+      inset: 0;
+      background: var(--rem-bg-grad);
+      z-index: 500;
+      display: flex;
+      flex-direction: column;
+      animation: remSlideInRight 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
+      overflow-y: auto;
+    }
+
+    @keyframes remSlideInRight {
+      from { transform: translateX(100%); }
+      to { transform: translateX(0); }
+    }
+
+    .hall-header {
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 0.5px solid rgba(255, 255, 255, 0.08);
+      background: rgba(22, 21, 43, 0.85);
+      backdrop-filter: blur(16px);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .hall-hero-card {
+      margin: 16px;
+      padding: 16px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 0.5px solid rgba(255, 255, 255, 0.12);
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .hall-section-title {
+      font-size: 13.5px;
+      font-weight: 600;
+      color: var(--rem-text-sub);
+      margin: 18px 16px 8px;
+    }
+
+    .hall-block-item {
+      margin: 0 16px 10px;
+      padding: 14px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 0.5px solid rgba(255, 255, 255, 0.1);
+      border-radius: 14px;
+      cursor: pointer;
+    }
+
+    .hall-block-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 6px;
+    }
+
+    .hall-block-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .hall-block-preview {
+      font-size: 12px;
+      color: var(--rem-text-sub);
+      line-height: 1.5;
+    }
+  </style>
 </head>
 <body>
 
   <!-- 轻量背景微粒画布 -->
   <canvas id="field" aria-hidden="true"></canvas>
 
-  <!-- 顶部原生微信质感沉浸导航栏（穿透手机状态栏） -->
+  <!-- 顶部导航栏 -->
   <header class="app-header">
     <div class="status-bar-spacer"></div>
-    <div class="header-inner">
-      <button type="button" class="icon-nav-btn" id="btn-back" aria-label="返回小手机桌面">
+    <div class="mini-top-bar">
+      <button type="button" class="icon-nav-btn" id="btn-back" aria-label="返回小手机桌面" style="color:#fff;">
         <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <polyline points="15 18 9 12 15 6"></polyline>
         </svg>
-        <span>桌面</span>
+        <span style="font-size:13.5px;margin-left:2px;">掌机</span>
       </button>
 
-      <div class="app-title">
-        <span class="title-main">忆海</span>
-        <span class="title-sub" id="header-engine-mode">本地混合检索</span>
-      </div>
+      <div class="mini-center-title">忆海 · 记忆中枢</div>
 
-      <div class="header-actions">
-        <button type="button" class="icon-nav-btn" id="btn-open-settings" aria-label="向量与总结配置">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <button type="button" class="icon-nav-btn" id="btn-open-settings" aria-label="向量与总结配置" style="color:#fff;">
           <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="12" cy="12" r="3"></circle>
             <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
           </svg>
         </button>
-        <button type="button" class="icon-nav-btn primary" id="btn-open-ingest" aria-label="收纳新记忆">
+        <button type="button" class="icon-nav-btn primary" id="btn-open-ingest" aria-label="收纳新记忆" style="color:#07c160;">
           <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <line x1="12" y1="5" x2="12" y2="19"></line>
             <line x1="5" y1="12" x2="19" y2="12"></line>
@@ -44,70 +283,103 @@
     </div>
   </header>
 
-  <main class="app-main">
+  <main class="app-main" style="padding-bottom:30px;">
     
-    <!-- 记忆池状态与概览卡片 -->
-    <section class="overview-card">
-      <div class="stat-grid">
-        <div class="stat-item">
-          <div class="stat-val" id="stat-total-memories">0</div>
-          <div class="stat-lbl">角色往昔</div>
-        </div>
-        <div class="stat-divider"></div>
-        <div class="stat-item">
-          <div class="stat-val" id="stat-active-evidence">0</div>
-          <div class="stat-lbl">真实对白凭据</div>
-        </div>
-        <div class="stat-divider"></div>
-        <div class="stat-item">
-          <div class="stat-val" id="stat-index-state">本地</div>
-          <div class="stat-lbl">检索管线</div>
-        </div>
+    <!-- 胶囊搜索框（致敬小程序风格） -->
+    <div class="search-pill-box">
+      <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="8"></circle>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+      </svg>
+      <input id="search-input" type="search" placeholder="搜索角色往昔、心结与约定..." />
+      <button type="button" id="btn-clear-search" class="clear-btn" aria-label="清空搜索" hidden style="color:#aaa;">×</button>
+    </div>
+
+    <!-- 角色大头像一行双列现代网格区 -->
+    <section class="npc-grid-section">
+      <div class="section-category-title">
+        <span>全部角色伙伴档案</span>
+        <span id="stat-total-characters" style="font-size:11.5px;color:rgba(255,255,255,0.45);">加载中...</span>
+      </div>
+
+      <div class="npc-dual-grid" id="npcDualGridContainer">
+        <!-- 动态生成一行双列大头像卡片 -->
       </div>
     </section>
 
-    <!-- 追忆检索框 -->
-    <section class="search-section">
-      <div class="search-box">
-        <svg class="search-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="11" cy="11" r="8"></circle>
-          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-        </svg>
-        <input id="search-input" type="search" autocomplete="off" placeholder="按语义或关键词追忆（人物约定、喜好、回忆）..." />
-        <button type="button" id="btn-clear-search" class="clear-btn" aria-label="清空搜索" hidden>×</button>
-      </div>
-      <div class="search-hint" id="search-feedback" hidden>正在进行向量与重排精算...</div>
-    </section>
-
-    <!-- 专属角色联系人胶囊条 -->
-    <section class="filter-section">
-      <div class="filter-capsules" id="filter-capsules">
-        <button type="button" class="capsule active" data-filter="all">全角色</button>
-      </div>
-    </section>
-
-    <!-- 记忆流列表 -->
-    <section class="memory-stream-section">
+    <!-- 原有记忆全量流（保留隐藏备用，供向量与关键词直接召回） -->
+    <section class="memory-stream-section" id="rawMemoryStreamSection" style="display:none;">
       <div class="section-meta">
         <span class="meta-title" id="stream-meta-title">记忆列表</span>
         <span class="meta-count" id="stream-meta-count">共 0 条</span>
       </div>
-
-      <div class="memory-list" id="memory-list">
-        <div class="empty-state" id="empty-state">
-          <div class="empty-icon">
-            <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="#999999" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8z"></path>
-              <path d="M12 6v6l4 2"></path>
-            </svg>
-          </div>
-          <div class="empty-title">暂无该角色的往昔记忆</div>
-          <div class="empty-desc">在聊天中与联系人对话，关键信息会自动萃取并沉淀为记忆凭据。</div>
-        </div>
-      </div>
+      <div class="memory-list" id="memory-list"></div>
     </section>
 
   </main>
+
+  <!-- 🌟 二级专属角色记忆殿堂视图（点击卡片下钻） -->
+  <div class="character-hall-view" id="characterHallView" style="display:none;">
+    <div class="hall-header">
+      <button type="button" class="icon-nav-btn" id="btn-close-hall" style="color:#fff;display:flex;align-items:center;gap:4px;">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg>
+        <span style="font-size:14px;">返回</span>
+      </button>
+      <div class="mini-center-title" id="hallCharacterName">角色档案</div>
+      <div style="width:40px;"></div>
+    </div>
+
+    <div class="hall-hero-card">
+      <img id="hallAvatarImg" src="assets/icons/chat.png" style="width:68px;height:68px;border-radius:50%;object-fit:cover;border:2px solid rgba(255,255,255,0.4);" />
+      <div>
+        <div id="hallHeroTitle" style="font-size:16.5px;font-weight:bold;color:#fff;">-</div>
+        <div id="hallHeroPersona" style="font-size:11.5px;color:rgba(255,255,255,0.6);margin-top:4px;line-height:1.4;">-</div>
+      </div>
+    </div>
+
+    <!-- 独立的四个多维记忆区块 -->
+    <div class="hall-section-title">时空与心理暗流</div>
+    <div class="hall-block-item" id="blockInnerState">
+      <div class="hall-block-header">
+        <div class="hall-block-title">💭 角色当前心境与想法</div>
+        <span style="font-size:11px;color:#07c160;">点击查看</span>
+      </div>
+      <div class="hall-block-preview" id="previewInnerState">暂无心境记录，在私聊中互动将自然沉淀。</div>
+    </div>
+
+    <div class="hall-section-title">往昔事实与雷区档案</div>
+    <div class="hall-block-item" id="blockCoreFacts">
+      <div class="hall-block-header">
+        <div class="hall-block-title">📜 上帝视角长效事实</div>
+        <span id="countCoreFacts" style="font-size:11px;color:#07c160;">0条</span>
+      </div>
+      <div class="hall-block-preview" id="previewCoreFacts">暂无客观事实，满额对白将自动触发凝练。</div>
+    </div>
+
+    <div class="hall-section-title">约定与待办信物</div>
+    <div class="hall-block-item" id="blockPromises">
+      <div class="hall-block-header">
+        <div class="hall-block-title">🎁 彼此承诺与重要事项</div>
+        <span id="countPromises" style="font-size:11px;color:#07c160;">0项</span>
+      </div>
+      <div class="hall-block-preview" id="previewPromises">暂无待办约定。</div>
+    </div>
+
+    <div class="hall-section-title">共同群聊与线索事件</div>
+    <div class="hall-block-item" id="blockGroupEvents">
+      <div class="hall-block-header">
+        <div class="hall-block-title">👥 群聊共通经历片段</div>
+        <span style="font-size:11px;color:#07c160;">共通感知</span>
+      </div>
+      <div class="hall-block-preview" id="previewGroupEvents">已与相关群聊自动连通。</div>
+    </div>
+
+    <div style="padding:16px;text-align:center;">
+      <button type="button" id="btnHallTriggerSummary" style="border:none;background:rgba(7,193,96,0.18);color:#07c160;padding:10px 18px;border-radius:20px;font-size:12.5px;font-weight:600;cursor:pointer;">
+        ⚡ 立即对该角色聊天历史进行深度提炼
+      </button>
+    </div>
+  </div>
 
   <!-- 浮层弹窗：向量检索与静默总结模型配置 -->
   <div class="rem-modal-mask" id="settings-modal" hidden>
@@ -222,9 +494,7 @@
         <div class="picker-search-box">
           <input id="picker-search-input" type="search" placeholder="输入关键词快速过滤模型..." />
         </div>
-        <div class="model-options-list" id="model-options-list">
-          <!-- 动态装配选项 -->
-        </div>
+        <div class="model-options-list" id="model-options-list"></div>
       </div>
       <div class="rem-modal-foot">
         <button type="button" class="rem-btn cancel" data-close="model-picker-modal">关闭</button>
@@ -246,128 +516,6 @@
       </div>
       <div class="rem-modal-foot">
         <button type="button" class="rem-btn primary" data-close="engine-info-modal">了解</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- 浮层弹窗：硅基流动向量模型价格与说明 -->
-  <div class="rem-modal-mask" id="embed-info-modal" hidden>
-    <div class="rem-modal-box modal-lg">
-      <div class="rem-modal-head">
-        <div class="rem-modal-title">硅基流动向量模型梯队</div>
-        <button type="button" class="rem-modal-close" data-close="embed-info-modal">×</button>
-      </div>
-      <div class="rem-modal-body scrollable">
-        <div class="price-tier">
-          <div class="tier-title">一、免费档 (0 元)</div>
-          <ul class="tier-list">
-            <li><b>BAAI/bge-m3</b>：多语言通用款，支持 100+ 语言，8K 上下文，跨语言与日常检索表现优秀。</li>
-            <li><b>BAAI/bge-large-zh-v1.5</b>：中文专项优化，中文检索稳定。</li>
-            <li><b>BAAI/bge-large-en-v1.5</b>：英文专项优化款。</li>
-          </ul>
-        </div>
-        <div class="price-tier">
-          <div class="tier-title">二、平价生产档 (约 0.07~0.14 元 / 百万Tokens)</div>
-          <ul class="tier-list">
-            <li><b>Pro/BAAI/bge-m3</b>：免费版同款能力，并发更高、保障更稳（约 0.07 元）。</li>
-            <li><b>Qwen/Qwen3-Embedding-0.6B</b>：轻量高速款，32K 超长上下文（约 0.07 元）。</li>
-            <li><b>Qwen/Qwen3-Embedding-4B</b>：平衡款，长上下文与精度兼备（约 0.14 元）。</li>
-          </ul>
-        </div>
-        <div class="price-tier">
-          <div class="tier-title">三、高精度旗舰档 (约 0.28 元 / 百万Tokens)</div>
-          <ul class="tier-list">
-            <li><b>Qwen/Qwen3-Embedding-8B</b>：32K 超长上下文，多语言顶级水平，长文本理解力强。</li>
-          </ul>
-        </div>
-        <div class="price-tier">
-          <div class="tier-title">四、多模态向量</div>
-          <ul class="tier-list">
-            <li><b>Qwen/Qwen3-VL-Embedding</b>：支持文本、图文等多模态跨域检索。</li>
-          </ul>
-        </div>
-        <p class="price-disclaimer">注：上述梯队与价格仅供参考，官方实际收费可能伴随调整，请以硅基流动官网最新公示为准。</p>
-      </div>
-      <div class="rem-modal-foot">
-        <button type="button" class="rem-btn primary" data-close="embed-info-modal">知道了</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- 浮层弹窗：硅基流动 Reranker 重排模型价格与说明 -->
-  <div class="rem-modal-mask" id="rerank-info-modal" hidden>
-    <div class="rem-modal-box modal-lg">
-      <div class="rem-modal-head">
-        <div class="rem-modal-title">硅基流动 Reranker 重排模型梯队</div>
-        <button type="button" class="rem-modal-close" data-close="rerank-info-modal">×</button>
-      </div>
-      <div class="rem-modal-body scrollable">
-        <div class="price-tier">
-          <div class="tier-title">一、免费档 (0 元)</div>
-          <ul class="tier-list">
-            <li><b>BAAI/bge-reranker-v2-m3</b>：多语言通用主流款，8K 上下文，与 bge-m3 向量模型配合契合度极佳，中文重排稳定。</li>
-          </ul>
-        </div>
-        <div class="price-tier">
-          <div class="tier-title">二、平价生产档 (约 0.07 元 / 百万Tokens)</div>
-          <ul class="tier-list">
-            <li><b>Pro/BAAI/bge-reranker-v2-m3</b>：提供更高并发限额与生产保障。</li>
-            <li><b>Qwen/Qwen3-Reranker-0.6B</b>：轻量高速款，32K 上下文，适合实时精排。</li>
-          </ul>
-        </div>
-        <div class="price-tier">
-          <div class="tier-title">三、中高精度档 (约 0.14~0.28 元 / 百万Tokens)</div>
-          <ul class="tier-list">
-            <li><b>Qwen/Qwen3-Reranker-4B</b>：平衡精度与成本（约 0.14 元）。</li>
-            <li><b>Qwen/Qwen3-Reranker-8B</b>：旗舰重排款，长文本与语境关联判断能力极强（约 0.28 元）。</li>
-          </ul>
-        </div>
-        <div class="price-tier">
-          <div class="tier-title">四、多模态重排</div>
-          <ul class="tier-list">
-            <li><b>Qwen/Qwen3-VL-Reranker</b>：支持图文多模态深度重排序。</li>
-          </ul>
-        </div>
-        <p class="price-disclaimer">配套建议：通常向量检索和重排建议同系列搭配使用（如 bge-m3 配 bge-reranker，Qwen3 系列成对搭配）。注：价格可能伴随官方运营策略变动，请以官网实时规则为准。</p>
-      </div>
-      <div class="rem-modal-foot">
-        <button type="button" class="rem-btn primary" data-close="rerank-info-modal">知道了</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- 浮层弹窗：专属硅基流动邀请码展示 -->
-  <div class="rem-modal-mask" id="promo-modal" hidden>
-    <div class="rem-modal-box">
-      <div class="rem-modal-head">
-        <div class="rem-modal-title">专属向量模型渠道</div>
-        <button type="button" class="rem-modal-close" data-close="promo-modal">×</button>
-      </div>
-      <div class="rem-modal-body">
-        <p class="promo-text">此为软件创作者的硅基流动专属邀请链接。新用户注册即可获赠专属额度，并免额度畅享多款免费 Embedding 向量与 Reranker 重排序模型：</p>
-        <div class="link-copy-box">
-          <code id="promo-url-text">https://cloud.siliconflow.cn/i/IJNUaNtb</code>
-          <button type="button" class="rem-btn sub" id="btn-copy-promo">复制链接</button>
-        </div>
-        <p class="promo-subtext">复制链接至外部浏览器打开即可注册（邀请码已附带，可以的话希望不要删除邀请码哦）。</p>
-      </div>
-      <div class="rem-modal-foot">
-        <button type="button" class="rem-btn primary" data-close="promo-modal">我知道了</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- 浮层弹窗：微信白灰简约确认框 -->
-  <div class="rem-modal-mask" id="dialog-modal" hidden>
-    <div class="rem-modal-box dialog-box">
-      <div class="rem-modal-body dialog-body">
-        <div class="dialog-title" id="dialog-title">提示</div>
-        <div class="dialog-content" id="dialog-content">确定要执行此操作吗？</div>
-      </div>
-      <div class="dialog-foot">
-        <button type="button" class="dialog-btn cancel" id="btn-dialog-cancel">取消</button>
-        <div class="dialog-divider"></div>
-        <button type="button" class="dialog-btn confirm" id="btn-dialog-confirm">确定</button>
       </div>
     </div>
   </div>
